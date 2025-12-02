@@ -17,30 +17,26 @@ const t24FTMetadata = {
     {
       name: "debit_account",
       label: "Debit Account",
-      type: "account",
+      type: "int",
       required: true,
       multi: false,
-      dropdown: true,
-      dropdownType: "dynamic",
-      dropdownName: "ACCOUNT",
+      dropdown: false,
       hotfield: true,
       t24_field: "DEBIT.ACCT.NO"
     },
     {
       name: "credit_account",
       label: "Credit Account",
-      type: "account",
+      type: "int",
       required: true,
       multi: false,
-      dropdown: true,
-      dropdownType: "dynamic",
-      dropdownName: "ACCOUNT",
+      dropdown: false,
       hotfield: true,
       t24_field: "CREDIT.ACCT.NO"
     },
     {
-      name: "currency",
-      label: "Currency",
+      name: "debit_currency",
+      label: "Debit Currency",
       type: "select",
       options: ["USD", "EUR", "GBP", "JPY", "INR"],
       required: true,
@@ -48,8 +44,17 @@ const t24FTMetadata = {
       t24_field: "CURRENCY"
     },
     {
-      name: "amount",
-      label: "Amount",
+      name: "credit_currency",
+      label: "Credit Currency",
+      type: "select",
+      options: ["USD", "EUR", "GBP", "JPY", "INR"],
+      required: true,
+      multi: false,
+      t24_field: "CURRENCY"
+    },
+    {
+      name: "debit_amount",
+      label: "Debit Amount",
       type: "amount",
       min: 1,
       max: 1000000000,
@@ -60,8 +65,8 @@ const t24FTMetadata = {
       t24_field: "AMOUNT"
     },
     {
-      name: "value_date",
-      label: "Value Date",
+      name: "debit_value_date",
+      label: "Debit Value Date",
       type: "date",
       required: true,
       multi: false,
@@ -213,7 +218,7 @@ const t24FTMetadata = {
       label: "Email Notification",
       type: "email",
       required: false,
-      multi: true,
+      multi: false,
       max_multifield: 5,
       t24_field: "EMAIL.NOTIFICATION"
     },
@@ -225,6 +230,15 @@ const t24FTMetadata = {
       multi: true,
       max_multifield: 3,
       t24_field: "SMS.NOTIFICATION"
+    },
+    {
+      name: "address",
+      label: "Address",
+      type: "string",
+      required: true,
+      multi: true,
+      max_multifield: 3,
+      t24_field: "ADDRESS"
     },
     {
       name: "attachment",
