@@ -124,15 +124,13 @@ const T24TransactExplorer = () => {
       currentTabData.fields.map(f => ({
         name: f.id,
         label: f.label,
-        type: f.type,
+        type: f.type === 'number' ? 'number' : 'string',
         required: f.metadata.required,
         multi: f.metadata.multi,
         min: f.metadata.min,
         max: f.metadata.max,
         options: f.metadata.options,
-        max_multifield: f.metadata.max_multifield,
-        pattern: f.pattern,
-        decimals: f.decimals
+        max_multifield: f.metadata.max_multifield
       })),
       currentFormData
     );
