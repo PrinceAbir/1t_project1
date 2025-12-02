@@ -210,7 +210,7 @@ const t24FTMetadata = {
     },
     {
       name: "email_notification",
-      label: "Email Notification",
+      label: "Email ",
       type: "email",
       required: false,
       multi: true,

@@ -328,7 +328,7 @@ body {
 /* Textarea */
 textarea.t24-input {
   min-height: 80px;
-  resize: vertical;
+  resize: none;
   font-family: 'Segoe UI', sans-serif;
   line-height: 1.5;
 }
