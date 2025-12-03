@@ -186,17 +186,18 @@ const T24TransactExplorer = () => {
 
   return (
     <div className="t24-transact-explorer">
+      
       {/* Header */}
-      <div className="t24-header">
+      {/* <div className="t24-header">
         <div className="header-info">
           <span className="date-time">02/12/2025, 12:37</span>
-          <span className="t24-title">Transact Explorer - Model Bank</span>
+          <span className="t24-title">1 Technologies - Model Bank</span>
         </div>
         <div className="t24-status">
           <span className="status-indicator">Online</span>
           <span className="session-id">Session: T24-001</span>
         </div>
-      </div>
+      </div> */}
 
      
       {/* Footer Status Bar */}
