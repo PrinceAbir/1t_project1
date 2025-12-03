@@ -186,6 +186,7 @@ useEffect(() => {
 
   return (
     <div className="t24-transact-explorer">
+<<<<<<< HEAD
       {/* NEW Toast */}
       {showToast && (
         <ErrorToast
@@ -195,6 +196,35 @@ useEffect(() => {
           onClose={() => setShowToast(false)}
         />
       )}
+=======
+      
+      {/* Header */}
+      {/* <div className="t24-header">
+        <div className="header-info">
+          <span className="date-time">02/12/2025, 12:37</span>
+          <span className="t24-title">1 Technologies - Model Bank</span>
+        </div>
+        <div className="t24-status">
+          <span className="status-indicator">Online</span>
+          <span className="session-id">Session: T24-001</span>
+        </div>
+      </div> */}
+
+     
+      {/* Footer Status Bar */}
+      {/* <div className="t24-footer">
+        <div className="footer-left">
+          <span>Tab: {activeTab}</span>
+          <span>Fields: {currentTabData.fields.length}</span>
+          <span>Form: {formData.form_name}</span>
+        </div>
+        <div className="footer-right">
+          <span className={`tab-status ${tabErrors[activeTab] ? 'error' : 'valid'}`}>
+            {tabErrors[activeTab] ? 'Validation Errors' : 'Ready'}
+          </span>
+        </div>
+      </div> */}
+>>>>>>> cab165d5724210dfb059caa44af58215788a1495
 
       {/* Tab Navigation */}
       <div className="t24-tab-navigation">
