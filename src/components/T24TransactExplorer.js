@@ -119,7 +119,7 @@ const T24TransactExplorer = () => {
   const handleValidate = () => {
     const currentTabData = t24FormData[activeTab];
     const currentFormData = formState[activeTab] || {};
-    
+
     const { errors, isValid } = ValidationService.validateAllFields(
       currentTabData.fields.map(f => ({
         name: f.id,
@@ -198,19 +198,20 @@ const T24TransactExplorer = () => {
         </div>
       </div>
 
-          {/* Footer Status Bar */}
-        <div className="t24-footer">
-          <div className="footer-left">
-            <span>Tab: {activeTab}</span>
-            <span>Fields: {currentTabData.fields.length}</span>
-            <span>Form: {formData.form_name}</span>
-          </div>
-          <div className="footer-right">
-            <span className={`tab-status ${tabErrors[activeTab] ? 'error' : 'valid'}`}>
-              {tabErrors[activeTab] ? 'Validation Errors' : 'Ready'}
-            </span>
-          </div>
+     
+      {/* Footer Status Bar */}
+      {/* <div className="t24-footer">
+        <div className="footer-left">
+          <span>Tab: {activeTab}</span>
+          <span>Fields: {currentTabData.fields.length}</span>
+          <span>Form: {formData.form_name}</span>
         </div>
+        <div className="footer-right">
+          <span className={`tab-status ${tabErrors[activeTab] ? 'error' : 'valid'}`}>
+            {tabErrors[activeTab] ? 'Validation Errors' : 'Ready'}
+          </span>
+        </div>
+      </div> */}
 
       {/* Tab Navigation */}
       <div className="t24-tab-navigation">
@@ -228,23 +229,34 @@ const T24TransactExplorer = () => {
       {/* Main Content */}
       <div className="t24-main-content">
         {/* Form Title */}
-        <div className="t24-form-title">
-          {currentTabData.title}
+
+
+        <div className="t24-title-section">
+
+
+          <div className="t24-form-title">
+            {currentTabData.title}
+
+          </div>
+
+          {/* T24 Action Buttons */}
+          <div className="t24-action-section">
+            <ActionButtons
+              onBack={handleBack}
+              onHold={handleHold}
+              onValidate={handleValidate}
+              onCommit={handleCommit}
+              onAuthorize={handleAuthorize}
+              onDelete={handleDelete}
+              onCopy={handleCopy}
+              disabled={!currentTabData}
+            />
+          </div>
+
+
+
         </div>
 
-         {/* T24 Action Buttons */}
-        <div className="t24-action-section">
-          <ActionButtons
-            onBack={handleBack}
-            onHold={handleHold}
-            onValidate={handleValidate}
-            onCommit={handleCommit}
-            onAuthorize={handleAuthorize}
-            onDelete={handleDelete}
-            onCopy={handleCopy}
-            disabled={!currentTabData}
-          />
-        </div>
 
         {/* Form Fields */}
         <div className="t24-form-container">
@@ -266,11 +278,11 @@ const T24TransactExplorer = () => {
           </div>
         </div>
 
-       
 
-    
+
+
       </div>
-    </div>
+    </div >
   );
 };
 
