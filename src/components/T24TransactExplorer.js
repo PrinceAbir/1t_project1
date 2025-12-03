@@ -186,7 +186,14 @@ useEffect(() => {
 
   return (
     <div className="t24-transact-explorer">
-      
+          {showToast && (
+        <ErrorToast
+          message={toastMessage}
+          buttonText={toastButton?.text}
+          onButtonClick={toastButton?.action}
+          onClose={() => setShowToast(false)}
+        />
+      )}
       {/* Header */}
       {/* <div className="t24-header">
         <div className="header-info">
