@@ -186,17 +186,6 @@ useEffect(() => {
 
   return (
     <div className="t24-transact-explorer">
-<<<<<<< HEAD
-      {/* NEW Toast */}
-      {showToast && (
-        <ErrorToast
-          message={toastMessage}
-          buttonText={toastButton?.text}
-          onButtonClick={toastButton?.action}
-          onClose={() => setShowToast(false)}
-        />
-      )}
-=======
       
       {/* Header */}
       {/* <div className="t24-header">
@@ -224,7 +213,6 @@ useEffect(() => {
           </span>
         </div>
       </div> */}
->>>>>>> cab165d5724210dfb059caa44af58215788a1495
 
       {/* Tab Navigation */}
       <div className="t24-tab-navigation">
