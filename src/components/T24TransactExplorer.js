@@ -199,7 +199,25 @@ const handleValidate = () => {
         </div>
       </div>
 
+<<<<<<< HEAD
       {/* Tabs */}
+=======
+          {/* Footer Status Bar */}
+        <div className="t24-footer">
+          <div className="footer-left">
+            <span>Tab: {activeTab}</span>
+            <span>Fields: {currentTabData.fields.length}</span>
+            <span>Form: {formData.form_name}</span>
+          </div>
+          <div className="footer-right">
+            <span className={`tab-status ${tabErrors[activeTab] ? 'error' : 'valid'}`}>
+              {tabErrors[activeTab] ? 'Validation Errors' : 'Ready'}
+            </span>
+          </div>
+        </div>
+
+      {/* Tab Navigation */}
+>>>>>>> origin/main
       <div className="t24-tab-navigation">
         {['FUNDS.TRANSFER', 'Audit', 'Reserved'].map(tab => (
           <TabButton
@@ -216,6 +234,24 @@ const handleValidate = () => {
       <div className="t24-main-content">
         <div className="t24-form-title">{currentTabData.title}</div>
 
+<<<<<<< HEAD
+=======
+         {/* T24 Action Buttons */}
+        <div className="t24-action-section">
+          <ActionButtons
+            onBack={handleBack}
+            onHold={handleHold}
+            onValidate={handleValidate}
+            onCommit={handleCommit}
+            onAuthorize={handleAuthorize}
+            onDelete={handleDelete}
+            onCopy={handleCopy}
+            disabled={!currentTabData}
+          />
+        </div>
+
+        {/* Form Fields */}
+>>>>>>> origin/main
         <div className="t24-form-container">
           <div className="t24-form-grid">
             {currentTabData.fields.map(field => (
@@ -231,6 +267,7 @@ const handleValidate = () => {
           </div>
         </div>
 
+<<<<<<< HEAD
         <div className="t24-action-section">
           <ActionButtons
             onBack={() => console.log("Back")}
@@ -257,6 +294,11 @@ const handleValidate = () => {
             </span>
           </div>
         </div>
+=======
+       
+
+    
+>>>>>>> origin/main
       </div>
     </div>
   );
