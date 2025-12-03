@@ -1,9 +1,9 @@
 // services/ValidationService.js
 class ValidationService {
   static validateField(field, value) {
-    const { label, type, required, min, max, multi, pattern, decimals } = field;
+    const { label, type, required, min, max, multivalued, pattern, decimals } = field;
     
-    if (multi) {
+    if (multivalued) {
       return this.validateMultiField(field, value);
     }
     

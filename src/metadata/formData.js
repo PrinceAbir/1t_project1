@@ -1,274 +1,219 @@
-// metadata/t24FTMetadata.js
-const t24FTMetadata = {
-  form_name: "fund_transfer_form",
-  transaction_type: "FT",
-  version: "T24.10",
+
+const formData = {
+  application: "payment",
+  type: "core",
   fields: [
     {
       name: "transaction_type",
       label: "Transaction Type",
       type: "select",
-      options: ["FT", "AC", "LD", "CO", "CH"],
-      required: true,
-      multi: false,
-      dropdown: true,
-      t24_field: "TRANSACTION.TYPE"
+      multi: true,
+      mandatory: true,
+      max_multifield: 3,
+      
     },
     {
       name: "debit_account",
       label: "Debit Account",
       type: "int",
-      required: true,
       multi: false,
-      dropdown: false,
-      hotfield: true,
-      t24_field: "DEBIT.ACCT.NO"
+      mandatory: true,
     },
     {
       name: "credit_account",
       label: "Credit Account",
       type: "int",
-      required: true,
       multi: false,
-      dropdown: false,
-      hotfield: true,
-      t24_field: "CREDIT.ACCT.NO"
+      mandatory: true,
     },
     {
       name: "debit_currency",
       label: "Debit Currency",
       type: "select",
-      options: ["USD", "EUR", "GBP", "JPY", "INR"],
-      required: true,
+      oppotions: [123,456],
       multi: false,
-      t24_field: "CURRENCY"
+      mandatory: true,
     },
     {
       name: "credit_currency",
       label: "Credit Currency",
       type: "select",
-      options: ["USD", "EUR", "GBP", "JPY", "INR"],
-      required: true,
       multi: false,
-      t24_field: "CURRENCY"
+      mandatory: true,
     },
     {
       name: "debit_amount",
       label: "Debit Amount",
       type: "amount",
-      min: 1,
-      max: 1000000000,
-      required: true,
       multi: false,
-      hotfield: true,
-      decimals: 2,
-      t24_field: "AMOUNT"
+      mandatory: true,
+      min_length: 1,
+      max_length: 1000000000,
     },
     {
       name: "debit_value_date",
       label: "Debit Value Date",
       type: "date",
-      required: true,
       multi: false,
-      t24_field: "VALUE.DATE"
+      mandatory: true,
     },
     {
       name: "payment_details",
       label: "Payment Details",
       type: "textarea",
-      required: false,
       multi: false,
-      maxLength: 200,
-      t24_field: "PAYMENT.DETAILS"
+      mandatory: false,
+      max_length: 200,
     },
     {
       name: "charge_account",
       label: "Charge Account",
       type: "account",
-      required: false,
       multi: false,
-      dropdown: true,
-      dropdownType: "dynamic",
-      dropdownName: "ACCOUNT",
-      t24_field: "CHARGE.ACCOUNT"
+      mandatory: false,
     },
     {
       name: "charge_code",
       label: "Charge Code",
       type: "select",
-      options: ["OUR", "BEN", "SHA"],
-      required: false,
       multi: false,
-      t24_field: "CHARGE.CODE"
+      mandatory: false,
     },
     {
       name: "ordering_customer",
       label: "Ordering Customer",
       type: "string",
-      min: 5,
-      max: 100,
-      required: true,
       multi: false,
-      t24_field: "ORDERING.CUSTOMER"
+      mandatory: true,
+      min_length: 5,
+      max_length: 100,
     },
     {
       name: "beneficiary",
       label: "Beneficiary",
       type: "string",
-      min: 5,
-      max: 100,
-      required: true,
-      multi: false,
-      t24_field: "BENEFICIARY"
+      multi: false, 
+      mandatory: true,
+      min_length: 5,
+      max_length: 100,
     },
     {
       name: "beneficiary_address",
       label: "Beneficiary Address",
       type: "textarea",
-      required: false,
       multi: false,
-      maxLength: 150,
-      t24_field: "BENEFICIARY.ADDRESS"
+      mandatory: false,
+      max_length: 150,
     },
     {
       name: "beneficiary_bank",
       label: "Beneficiary Bank",
       type: "string",
-      min: 5,
-      max: 100,
-      required: false,
       multi: false,
-      t24_field: "BENEFICIARY.BANK"
+      mandatory: false,
+      min_length: 5,
+      max_length: 100,
     },
     {
       name: "intermediary_bank",
       label: "Intermediary Bank",
       type: "string",
-      required: false,
       multi: false,
-      t24_field: "INTERMEDIARY.BANK"
+      mandatory: false,
     },
     {
       name: "customer_reference",
       label: "Customer Reference",
       type: "reference",
-      required: true,
       multi: false,
-      pattern: "^[A-Z0-9]{1,20}$",
-      t24_field: "CUSTOMER.REF"
+      mandatory: true,
     },
     {
       name: "internal_reference",
       label: "Internal Reference",
       type: "reference",
-      required: false,
       multi: false,
-      readOnly: true,
-      t24_field: "INTERNAL.REF"
+      mandatory: false,
     },
     {
       name: "exchange_rate",
       label: "Exchange Rate",
       type: "number",
-      min: 0.0001,
-      max: 10000,
-      required: false,
       multi: false,
-      decimals: 4,
-      t24_field: "EXCHANGE.RATE"
+      mandatory: false,
     },
     {
       name: "commission",
       label: "Commission",
       type: "amount",
-      required: false,
       multi: false,
-      decimals: 2,
-      t24_field: "COMMISSION"
+      mandatory: false,
     },
     {
       name: "tax",
       label: "Tax",
       type: "amount",
-      required: false,
       multi: false,
-      decimals: 2,
-      t24_field: "TAX"
+      mandatory: false,
     },
     {
       name: "transaction_charges",
       label: "Transaction Charges",
       type: "amount",
-      required: false,
       multi: false,
-      decimals: 2,
-      t24_field: "TRANSACTION.CHARGES"
+      mandatory: false,
     },
     {
       name: "narrative",
       label: "Narrative",
       type: "textarea",
-      required: false,
       multi: false,
-      maxLength: 250,
-      t24_field: "NARRATIVE"
+      mandatory: false,
+      max_length: 250,
     },
     {
       name: "email_notification",
-      label: "Email ",
+      label: "Email",
       type: "email",
-      required: false,
       multi: false,
-      max_multifield: 5,
-      t24_field: "EMAIL.NOTIFICATION"
+      mandatory: false,
     },
     {
       name: "sms_notification",
       label: "SMS Notification",
       type: "tel",
-      required: false,
       multi: true,
-      max_multifield: 3,
-      t24_field: "SMS.NOTIFICATION"
+      mandatory: false,
     },
     {
       name: "address",
       label: "Address",
       type: "string",
-      required: true,
       multi: true,
-      max_multifield: 3,
-      t24_field: "ADDRESS"
+      mandatory: true,
     },
     {
       name: "attachment",
       label: "Attachment",
       type: "file",
-      required: false,
       multi: false,
-      accept: ".pdf,.doc,.docx,.jpg,.png",
-      t24_field: "ATTACHMENT"
+      mandatory: false,
     },
     {
       name: "priority",
       label: "Priority",
       type: "select",
-      options: ["NORMAL", "HIGH", "URGENT"],
-      required: true,
       multi: false,
-      defaultValue: "NORMAL",
-      t24_field: "PRIORITY"
+      mandatory: true,
     },
     {
       name: "delivery_channel",
       label: "Delivery Channel",
       type: "select",
-      options: ["RTGS", "NEFT", "SWIFT", "CHIPS", "FEDWIRE"],
-      required: true,
       multi: false,
-      t24_field: "DELIVERY.CHANNEL"
-    }
-  ]
+      mandatory: true,
+    },
+  ],
 };
 
-export default t24FTMetadata;
+export default formData;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
   const {
-    name,
+    id,
     label,
     type,
     required,
@@ -10,27 +10,20 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
     options,
     min,
     max,
-    inputable,
-    dropdown,
-    dropdownType,
-    dropdownName,
     max_multifield,
-    hotfield,
     decimals,
-    pattern,
     readOnly,
     accept,
-    defaultValue
+    pattern
   } = field;
 
   const [dropdownOptions, setDropdownOptions] = useState(options || []);
-  const [isHotfield, setIsHotfield] = useState(hotfield || false);
 
   useEffect(() => {
-    if (dropdown && dropdownType === 'dynamic' && dropdownName) {
-      loadDynamicOptions(dropdownName);
+    if (field.dropdown && field.dropdownType === 'dynamic' && field.dropdownName) {
+      loadDynamicOptions(field.dropdownName);
     }
-  }, [dropdown, dropdownType, dropdownName]);
+  }, [field.dropdown, field.dropdownType, field.dropdownName]);
 
   const loadDynamicOptions = (source) => {
     const dynamicData = {
@@ -43,36 +36,85 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
     setDropdownOptions(dynamicData[source] || []);
   };
 
-  const getT24FieldType = () => {
-    if (dropdown) return 'select';
-    if (type === 'file') return 'file';
-    if (type === 'date') return 'date';
-    if (type === 'textarea') return 'textarea';
-    if (type === 'amount' || type === 'number') return 'number';
-    if (type === 'email') return 'email';
-    if (type === 'tel') return 'tel';
-    if (type === 'reference') return 'text';
-    if (type === 'account') return 'select';
-    if (options && options.length > 0) return 'select';
-    return 'text';
+  // Determine input type and attributes dynamically
+  const getInputProps = () => {
+    switch (type) {
+      case 'int':
+        return {
+          type: 'text',
+          inputMode: 'numeric',
+          pattern: '[0-9]*',
+          title: 'Enter integers only',
+          min,
+          max,
+          required,
+          readOnly
+        };
+
+      case 'amount':
+        return {
+          type: 'number',
+          step: decimals ? Math.pow(10, -decimals) : 0.01,
+          min: min ?? 0,
+          max,
+          placeholder: '0.00',
+          required,
+          readOnly
+        };
+
+      case 'tel':
+        return {
+          type: 'tel',
+          pattern: pattern || '01[3-9][0-9]{8}',
+          title: 'Enter a valid 11-digit Bangladeshi mobile number',
+          maxLength: 11,
+          inputMode: 'numeric',
+          placeholder: '01**********',
+          required,
+          readOnly
+        };
+
+      case 'email':
+        return {
+          type: 'email',
+          placeholder: `Enter ${label.toLowerCase()}`,
+          required,
+          readOnly
+        };
+
+      case 'date':
+        return { type: 'date', required, readOnly };
+
+      case 'file':
+        return { type: 'file', accept, required, readOnly };
+
+      case 'textarea':
+        return { as: 'textarea', maxLength: max, placeholder: `Enter ${label.toLowerCase()}`, required, readOnly };
+
+      default:
+        // default text input
+        return { type: 'text', minLength: min, maxLength: max, pattern, placeholder: `Enter ${label.toLowerCase()}`, required, readOnly };
+    }
   };
 
-  const fieldType = getT24FieldType();
-
-  const handleSingleChange = (newValue) => {
-    onChange(name, newValue);
-  };
-
-  const handleMultiChange = (index, newValue) => {
-    const currentValues = Array.isArray(value) ? [...value] : [''];
-    currentValues[index] = newValue;
-    onChange(name, currentValues);
+  const handleChange = (newValue, index = null) => {
+    if (multi) {
+      const currentValues = Array.isArray(value) ? [...value] : [''];
+      if (index !== null) {
+        currentValues[index] = newValue;
+      } else {
+        currentValues.push(newValue);
+      }
+      onChange(id, currentValues);
+    } else {
+      onChange(id, newValue);
+    }
   };
 
   const addMultiField = () => {
     const currentValues = Array.isArray(value) ? [...value] : [''];
     if (!max_multifield || currentValues.length < max_multifield) {
-      onChange(name, [...currentValues, '']);
+      handleChange('', currentValues.length);
     }
   };
 
@@ -80,112 +122,57 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
     const currentValues = Array.isArray(value) ? [...value] : [''];
     if (currentValues.length > 1) {
       const newValues = currentValues.filter((_, i) => i !== index);
-      onChange(name, newValues);
+      onChange(id, newValues);
     }
   };
 
-  const renderSingleField = () => {
-    const commonProps = {
-      id: `${tabId}_${name}`, // ✅ correct id used for toast scroll
-      value: value || '',
-      onChange: (e) => handleSingleChange(e.target.value),
-      className: `t24-input ${error ? 'error' : ''} ${isHotfield ? 'hotfield' : ''}`,
-      required,
-      readOnly,
-      disabled: readOnly
-    };
-
-    switch (fieldType) {
-      case 'select':
-        return (
-          <select {...commonProps} disabled={readOnly}>
-            <option value="">Select...</option>
-            {(dropdownOptions.length > 0 ? dropdownOptions : options || []).map(option => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </select>
-        );
-      case 'file':
-        return (
-          <input
-            type="file"
-            accept={accept}
-            {...commonProps}
-            onChange={(e) => handleSingleChange(e.target.files?.[0]?.name || '')}
-          />
-        );
-      case 'date':
-        return <input type="date" {...commonProps} />;
-      case 'textarea':
-        return <textarea {...commonProps} maxLength={max} placeholder={`Enter ${label.toLowerCase()}`} />;
-      case 'number':
-        return <input type="number" step={decimals ? Math.pow(10, -decimals) : 1} min={min} max={max} {...commonProps} />;
-      case 'email':
-        return <input type="email" {...commonProps} placeholder={`Enter ${label.toLowerCase()}`} />;
-      case 'tel':
-        return <input type="tel" {...commonProps} placeholder={`Enter ${label.toLowerCase()}`} pattern={pattern} />;
-      default:
-        return <input type="text" {...commonProps} minLength={min} maxLength={max} pattern={pattern} placeholder={`Enter ${label.toLowerCase()}`} />;
-    }
-  };
+  const inputProps = getInputProps();
 
   const renderMultiFields = () => {
     const values = Array.isArray(value) ? value : [''];
-
     return (
       <div className="multi-fields-container">
-        {values.map((val, index) => (
-          <div key={index} className="multi-field-row">
-            <div className="multi-field-input">
-              {fieldType === 'select' ? (
-                <select
-                  id={`${tabId}_${name}_${index}`} // optional: unique id per multi-input
-                  value={val || ''}
-                  onChange={(e) => handleMultiChange(index, e.target.value)}
-                  className={`t24-input ${error ? 'error' : ''} ${isHotfield ? 'hotfield' : ''}`}
-                  required={required && index === 0}
-                  disabled={readOnly}
-                >
-                  <option value="">Select...</option>
-                  {(dropdownOptions.length > 0 ? dropdownOptions : options || []).map(option => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  id={`${tabId}_${name}_${index}`} // optional: unique id per multi-input
-                  type={fieldType === 'number' ? 'number' : 'text'}
-                  value={val || ''}
-                  onChange={(e) => handleMultiChange(index, e.target.value)}
-                  className={`t24-input ${error ? 'error' : ''} ${isHotfield ? 'hotfield' : ''}`}
-                  placeholder={`Enter ${label.toLowerCase()}`}
-                  required={required && index === 0}
-                  readOnly={readOnly}
-                  disabled={readOnly}
-                />
-              )}
+        {values.map((val, idx) => (
+          <div key={idx} className="multi-field-row">
+            {field.options || type === 'account' ? (
+              <select
+                id={`${tabId}_${id}_${idx}`}
+                value={val || ''}
+                onChange={(e) => handleChange(e.target.value, idx)}
+                required={required && idx === 0}
+                disabled={readOnly}
+                className={`t24-input ${error ? 'error' : ''}`}
+              >
+                <option value="">Select...</option>
+                {(dropdownOptions.length ? dropdownOptions : options || []).map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            ) : inputProps.as === 'textarea' ? (
+              <textarea
+                id={`${tabId}_${id}_${idx}`}
+                value={val || ''}
+                onChange={(e) => handleChange(e.target.value, idx)}
+                {...inputProps}
+                className={`t24-input ${error ? 'error' : ''}`}
+              />
+            ) : (
+              <input
+                id={`${tabId}_${id}_${idx}`}
+                value={val || ''}
+                onChange={(e) => handleChange(e.target.value, idx)}
+                {...inputProps}
+                className={`t24-input ${error ? 'error' : ''}`}
+              />
+            )}
 
-              {values.length > 1 && (
-                <button
-                  type="button"
-                  className="remove-multi-field"
-                  onClick={() => removeMultiField(index)}
-                  title="Remove"
-                  disabled={readOnly}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+            {values.length > 1 && !readOnly && (
+              <button type="button" className="remove-multi-field" onClick={() => removeMultiField(idx)}>✕</button>
+            )}
           </div>
         ))}
-
         {(!max_multifield || values.length < max_multifield) && !readOnly && (
-          <button
-            type="button"
-            className="add-multi-field"
-            onClick={addMultiField}
-          >
+          <button type="button" className="add-multi-field" onClick={addMultiField}>
             + Add {label}
           </button>
         )}
@@ -194,19 +181,45 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
   };
 
   return (
-    <div className={`t24-form-field ${isHotfield ? 'hotfield-container' : ''}`}>
-      <label 
-        htmlFor={`${tabId}_${name}`} 
-        className={`t24-label ${error ? 'error' : ''} ${isHotfield ? 'hotfield-label' : ''}`}
-      >
-        {label}
-        {required && <span className="required-asterisk">*</span>}
-        {isHotfield && <span className="hotfield-indicator" title="Important field">●</span>}
+    <div className={`t24-form-field`}>
+      <label htmlFor={`${tabId}_${id}`} className={`t24-label ${error ? 'error' : ''}`}>
+        {label}{required && <span className="required-asterisk">*</span>}
       </label>
-      
-      <div className="t24-input-container">
-        {multi ? renderMultiFields() : renderSingleField()}
 
+      <div className="t24-input-container">
+        {multi ? renderMultiFields() : (
+          field.options || type === 'account' ? (
+            <select
+              id={`${tabId}_${id}`}
+              value={value || ''}
+              onChange={(e) => handleChange(e.target.value)}
+              required={required}
+              disabled={readOnly}
+              className={`t24-input ${error ? 'error' : ''}`}
+            >
+              <option value="">Select...</option>
+              {(dropdownOptions.length ? dropdownOptions : options || []).map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          ) : inputProps.as === 'textarea' ? (
+            <textarea
+              id={`${tabId}_${id}`}
+              value={value || ''}
+              onChange={(e) => handleChange(e.target.value)}
+              {...inputProps}
+              className={`t24-input ${error ? 'error' : ''}`}
+            />
+          ) : (
+            <input
+              id={`${tabId}_${id}`}
+              value={value || ''}
+              onChange={(e) => handleChange(e.target.value)}
+              {...inputProps}
+              className={`t24-input ${error ? 'error' : ''}`}
+            />
+          )
+        )}
         {error && <div className="t24-error">{error}</div>}
       </div>
     </div>

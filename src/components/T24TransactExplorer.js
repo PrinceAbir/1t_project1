@@ -33,65 +33,37 @@ const T24TransactExplorer = () => {
     () => ({
       "FUNDS.TRANSFER": {
         title: "FUNDS.TRANSFER / FT/25105/ZGG16",
-        fields: DataTransformer.metadataToT24Fields(formData),
+        fields: DataTransformer.metadataToT24Fields(formData), // works for new format
       },
       Audit: {
-        title: "Audit Information",
-        fields: [
-          {
-            id: "auditId",
-            label: "Audit ID",
-            value: "AUD" + Date.now(),
-            type: "display",
-            metadata: { required: true, readOnly: true, fieldType: "DISPLAY" },
-          },
-          {
-            id: "auditTimestamp",
-            label: "Timestamp",
-            value: new Date().toLocaleString(),
-            type: "display",
-            metadata: { required: false, fieldType: "DISPLAY" },
-          },
-        ],
+        /* ... */
       },
       Reserved: {
-        title: "Reserved Fields",
-        fields: [
-          {
-            id: "comments",
-            label: "Comments",
-            value: "",
-            type: "textarea",
-            metadata: {
-              required: false,
-              maxLength: 200,
-              fieldType: "TEXTAREA",
-            },
-          },
-        ],
+        /* ... */
       },
     }),
     []
   );
 
-  // Initialize form
-  useEffect(() => {
-    const initialState = {};
-    const errors = {};
+useEffect(() => {
+  const initialState = {};
+  const errors = {};
 
-    Object.keys(t24FormData).forEach((tab) => {
-      initialState[tab] = {};
-      errors[tab] = {};
+  Object.keys(t24FormData).forEach((tab) => {
+    initialState[tab] = {};
+    errors[tab] = {};
 
-      t24FormData[tab].fields.forEach((field) => {
-        initialState[tab][field.id] = field.value;
-        errors[tab][field.id] = "";
-      });
+    const fields = t24FormData[tab].fields || []; // ✅ safeguard
+
+    fields.forEach((field) => {
+      initialState[tab][field.id] = field.value;
+      errors[tab][field.id] = "";
     });
+  });
 
-    setFormState(initialState);
-    setIsLoading(false);
-  }, [t24FormData]);
+  setFormState(initialState);
+  setIsLoading(false);
+}, [t24FormData]);
 
   // Field change
   const handleFieldChange = (fieldName, value) => {
@@ -109,56 +81,54 @@ const T24TransactExplorer = () => {
   };
 
   // Validation
- const handleValidate = () => {
-  const currentTabData = t24FormData[activeTab];
-  const currentFormData = formState[activeTab];
+  const handleValidate = () => {
+    const currentTabData = t24FormData[activeTab];
+    const currentFormData = formState[activeTab];
 
-  // 1️⃣ Prepare field configs from metadata
-  const fieldConfigs = currentTabData.fields.map(f => ({
-    name: f.id,
-    label: f.label,
-    type: f.type === "number" ? "number" : "string",
-    required: f.metadata.required,
-    multi: f.metadata.multi,
-    min: f.metadata.min,
-    max: f.metadata.max,
-    options: f.metadata.options,
-    max_multifield: f.metadata.max_multifield,
-  }));
-
-  // 2️⃣ Validate data
-  const { errors, isValid } = ValidationService.validateAllFields(
-    fieldConfigs,
-    currentFormData
-  );
-
-  // 3️⃣ Update error states
-  setValidationErrors(errors);
-  setTabErrors(prev => ({
-    ...prev,
-    [activeTab]: !isValid,
-  }));
-
-  // 4️⃣ If valid → show success toast
-  if (isValid) {
-    triggerToast(`${activeTab} validation successful!`);
-    return true;
-  }
-
-  // 5️⃣ Convert errors into array list for toast UI
-  const errorEntries = Object.keys(errors)
-    .filter(key => errors[key])
-    .map(key => ({
-      field: `${activeTab}_${key}`, // matches DOM ID used in FieldRenderer
-      message: errors[key],
+    const fieldConfigs = currentTabData.fields.map((f) => ({
+      name: f.id,
+      label: f.label,
+      type: f.type === "number" || f.type === "amount" ? "number" : "string",
+      required: f.metadata.required,
+      multi: f.metadata.multi,
+      min: f.metadata.min,
+      max: f.metadata.max,
+      options: f.metadata.options,
+      max_multifield: f.metadata.max_multifield,
     }));
 
-  // 6️⃣ Pop toast with clickable errors
-  triggerToast(errorEntries, "View Errors");
+    // 2️⃣ Validate data
+    const { errors, isValid } = ValidationService.validateAllFields(
+      fieldConfigs,
+      currentFormData
+    );
 
-  return false;
-};
-  
+    // 3️⃣ Update error states
+    setValidationErrors(errors);
+    setTabErrors((prev) => ({
+      ...prev,
+      [activeTab]: !isValid,
+    }));
+
+    // 4️⃣ If valid → show success toast
+    if (isValid) {
+      triggerToast(`${activeTab} validation successful!`);
+      return true;
+    }
+
+    // 5️⃣ Convert errors into array list for toast UI
+    const errorEntries = Object.keys(errors)
+      .filter((key) => errors[key])
+      .map((key) => ({
+        field: `${activeTab}_${key}`, // matches DOM ID used in FieldRenderer
+        message: errors[key],
+      }));
+
+    // 6️⃣ Pop toast with clickable errors
+    triggerToast(errorEntries, "View Errors");
+
+    return false;
+  };
 
   // Delete
   const handleDelete = () => {
@@ -225,21 +195,6 @@ const T24TransactExplorer = () => {
           onClose={() => setShowToast(false)}
         />
       )}
-
-      {/* Header */}
-      <div className="t24-header">
-        <div className="header-info">
-          <span className="date-time">02/12/2025, 12:37</span>
-          <span className="t24-title">Transact Explorer - Model Bank</span>
-        </div>
-        <div className="t24-status">
-          <span className="status-indicator">Online</span>
-          <span className="session-id">Session: T24-001</span>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      {/* Footer Status Bar */}
 
       {/* Tab Navigation */}
       <div className="t24-tab-navigation">
