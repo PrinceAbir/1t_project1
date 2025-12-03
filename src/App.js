@@ -1,12 +1,12 @@
 // App.js
 import React from 'react';
-import T24TransactExplorer from './components/T24TransactExplorer';
+import Homepage from './Homepage';
 import './App.css';
 
 const App = () => {
   return (
     <div className="App full-screen">
-      <T24TransactExplorer />
+      <Homepage />
     </div>
   );
 };

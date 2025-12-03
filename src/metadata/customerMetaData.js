@@ -1,0 +1,235 @@
+const customerMetaData ={
+    "application": "customer",
+    "type": "core",
+    "fields": {
+        "customer.name.1": {
+            "field_name": "customer_name_1",
+            "label": "Customer Name 1",
+            "type": "string",
+            "multivalued": false,
+            "mandatory": true,
+            "min_length": 2,
+            "max_length": 100
+        },
+        "customer.name.2": {
+            "field_name": "customer_name_2",
+            "label": "Customer Name 2",
+            "type": "string",
+            "multivalued": false,
+            "mandatory": false,
+            "max_length": 100
+        },
+        "short.name": {
+            "field_name": "short_name",
+            "label": "Short Name",
+            "type": "string",
+            "multivalued": false,
+            "mandatory": true,
+            "min_length": 2,
+            "max_length": 35
+        },
+        "category": {
+            "field_name": "category",
+            "label": "Customer Category",
+            "type": "select",
+            "multivalued": false,
+            "mandatory": true
+        },
+        "residency": {
+            "field_name": "residency",
+            "label": "Residency",
+            "type": "select",
+            "multivalued": false,
+            "mandatory": true
+        },
+        "nationality": {
+            "field_name": "nationality",
+            "label": "Nationality",
+            "type": "select",
+            "multivalued": false,
+            "mandatory": true
+        },
+        "legal.form": {
+            "field_name": "legal_form",
+            "label": "Legal Form",
+            "type": "select",
+            "multivalued": false,
+            "mandatory": false
+        },
+        "date.birth.incorp": {
+            "field_name": "date_birth_or_incorporation",
+            "label": "Date of Birth / Incorporation",
+            "type": "date",
+            "multivalued": false,
+            "mandatory": true
+        },
+        "id.type": {
+            "field_name": "id_type",
+            "label": "Identification Type",
+            "type": "select",
+            "multivalued": false,
+            "mandatory": true
+        },
+        "id.number": {
+            "field_name": "id_number",
+            "label": "ID Number",
+            "type": "string",
+            "multivalued": false,
+            "mandatory": true,
+            "min_length": 3,
+            "max_length": 50
+        },
+        "id.issue.date": {
+            "field_name": "id_issue_date",
+            "label": "ID Issue Date",
+            "type": "date",
+            "multivalued": false,
+            "mandatory": false
+        },
+        "id.expiry.date": {
+            "field_name": "id_expiry_date",
+            "label": "ID Expiry Date",
+            "type": "date",
+            "multivalued": false,
+            "mandatory": false
+        },
+        "industry.sector": {
+            "field_name": "industry_sector",
+            "label": "Industry Sector",
+            "type": "select",
+            "multivalued": false,
+            "mandatory": false
+        },
+        "employer.name": {
+            "field_name": "employer_name",
+            "label": "Employer Name",
+            "type": "string",
+            "multivalued": false,
+            "mandatory": false,
+            "max_length": 100
+        },
+        "customer.status": {
+            "field_name": "customer_status",
+            "label": "Customer Status",
+            "type": "select",
+            "multivalued": false,
+            "mandatory": true
+        },
+        "risk.rating": {
+            "field_name": "risk_rating",
+            "label": "Risk Rating",
+            "type": "select",
+            "multivalued": false,
+            "mandatory": false
+        },
+        "pep": {
+            "field_name": "pep",
+            "label": "PEP Status",
+            "type": "select",
+            "multivalued": false,
+            "mandatory": false
+        },
+        "kyc.review.date": {
+            "field_name": "kyc_review_date",
+            "label": "KYC Review Date",
+            "type": "date",
+            "multivalued": false,
+            "mandatory": false
+        },
+        "address.line.1": {
+            "field_name": "address_line_1",
+            "label": "Address Line 1",
+            "type": "string",
+            "multivalued": false,
+            "mandatory": true,
+            "max_length": 150
+        },
+        "address.line.2": {
+            "field_name": "address_line_2",
+            "label": "Address Line 2",
+            "type": "string",
+            "multivalued": false,
+            "mandatory": false,
+            "max_length": 150
+        },
+        "town.city": {
+            "field_name": "town_city",
+            "label": "Town / City",
+            "type": "string",
+            "multivalued": false,
+            "mandatory": true,
+            "max_length": 60
+        },
+        "country": {
+            "field_name": "country",
+            "label": "Country",
+            "type": "select",
+            "multivalued": false,
+            "mandatory": true
+        },
+        "postal.code": {
+            "field_name": "postal_code",
+            "label": "Postal Code",
+            "type": "string",
+            "multivalued": false,
+            "mandatory": false,
+            "max_length": 15
+        },
+        "mobile.phone": {
+            "field_name": "mobile_phone",
+            "label": "Mobile Phone",
+            "type": "tel",
+            "multivalued": false,
+            "mandatory": true,
+            "min_length": 7,
+            "max_length": 20
+        },
+        "home.phone": {
+            "field_name": "home_phone",
+            "label": "Home Phone",
+            "type": "tel",
+            "multivalued": false,
+            "mandatory": false
+        },
+        "email.address": {
+            "field_name": "email_address",
+            "label": "Email",
+            "type": "email",
+            "multivalued": false,
+            "mandatory": false,
+            "max_length": 100
+        },
+        "communication.preference": {
+            "field_name": "communication_preference",
+            "label": "Preferred Communication Method",
+            "type": "select",
+            "multivalued": false,
+            "mandatory": false
+        },
+        "relationship.officer": {
+            "field_name": "relationship_officer",
+            "label": "Relationship Officer",
+            "type": "reference",
+            "multivalued": false,
+            "mandatory": false
+        },
+        "notes": {
+            "field_name": "notes",
+            "label": "Notes",
+            "type": "textarea",
+            "multivalued": false,
+            "mandatory": false,
+            "max_length": 300
+        },
+        "attachments": {
+            "field_name": "attachments",
+            "label": "Attachments",
+            "type": "file",
+            "multivalued": true,
+            "mandatory": false
+        }
+    }
+}
+
+
+export default customerMetaData;
