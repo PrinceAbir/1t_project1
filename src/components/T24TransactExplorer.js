@@ -211,20 +211,30 @@ useEffect(() => {
 
       {/* Main */}
       <div className="t24-main-content">
-        <div className="t24-form-title">{currentTabData.title}</div>
+        <div className="t24-title-section">
 
-        {/* T24 Action Buttons */}
-        <div className="t24-action-section">
-          <ActionButtons
-            onBack={handleBack}
-            onHold={handleHold}
-            onValidate={handleValidate}
-            onCommit={handleCommit}
-            onAuthorize={handleAuthorize}
-            onDelete={handleDelete}
-            onCopy={handleCopy}
-            disabled={!currentTabData}
-          />
+
+          <div className="t24-form-title">
+            {currentTabData.title}
+
+          </div>
+
+          {/* T24 Action Buttons */}
+          <div className="t24-action-section">
+            <ActionButtons
+              onBack={handleBack}
+              onHold={handleHold}
+              onValidate={handleValidate}
+              onCommit={handleCommit}
+              onAuthorize={handleAuthorize}
+              onDelete={handleDelete}
+              onCopy={handleCopy}
+              disabled={!currentTabData}
+            />
+          </div>
+
+
+
         </div>
 
         {/* Form Fields */}
