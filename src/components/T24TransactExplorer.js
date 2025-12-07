@@ -26,6 +26,10 @@ const T24TransactExplorer = ({ module }) => {
     setShowToast(true);
   };
 
+  const handleBackToHome = () => {
+    window.location.href = '/';
+  };
+
 
   // helper to build DOM IDs consistent with FieldRenderer
   const buildFieldId = (tab, fieldId, index = null) =>
@@ -116,6 +120,8 @@ const T24TransactExplorer = ({ module }) => {
       return true;
     }
 
+
+
     const toastErrors = Object.entries(errors).flatMap(([key, val]) => {
       // val may be string '' or non-empty, or an array for multi fields
       if (Array.isArray(val)) {
@@ -154,7 +160,7 @@ const T24TransactExplorer = ({ module }) => {
   const handleAuthorize = () => handleValidate() && triggerToast("Authorized");
   const handleCopy = () => triggerToast("Copied");
   const handleHold = () => triggerToast("Held");
-  const handleBack = () => triggerToast("Back");
+  const handleBack = () => handleBackToHome();
 
   if (isLoading || !metadata) return <div className="loading">Loading...</div>;
 
