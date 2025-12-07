@@ -133,11 +133,6 @@ const T24TransactExplorer = ({ module }) => {
     return false;
   };
 
-<<<<<<< HEAD
-  
-  /** ------------------ ACTION HANDLERS ------------------ **/
-=======
->>>>>>> origin/main
   const handleDelete = () => {
     if (window.confirm("Delete transaction?")) {
       setFormState((p) => ({ ...p, [activeTab]: {} }));

@@ -19,7 +19,7 @@ body {
 /* Full Screen Container */
 .App {
   width: 100vw;
-  height: 100vh;
+  /*height: 100vh; */
   overflow: hidden;
 }
 
@@ -187,6 +187,12 @@ body {
   align-items: center;
   justify-content: center;
   animation: bounce 0.5s ease;
+  opacity: 1;
+  visibility: visible;
+}
+
+.tab-button:not(.has-error)::after {
+  display: none;
 }
 
 @keyframes bounce {

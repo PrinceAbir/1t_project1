@@ -148,6 +148,17 @@ const MainApp = () => {
     return icons[currentModule] || '📋';
   };
 
+  const getPlaceholder = () => {
+    const placeholders = {
+      'customer': 'e.g., CUST00123, CUST00456...',
+      'funds': 'e.g., FT2024001, FT2024002...',
+      'account': 'e.g., ACCT45678, ACCT45679...',
+      'deposit': 'e.g., DEP78901, DEP78902...',
+      'lending': 'e.g., LN234567, LN234568...'
+    };
+    return placeholders[currentModule] || 'Enter a record ID...';
+  };
+
   return (
     <div className="main-app">
       {/* Header */}
@@ -194,7 +205,7 @@ const MainApp = () => {
                       type="text"
                       value={recordId}
                       onChange={(e) => setRecordId(e.target.value)}
-                      placeholder="e.g., CUST00123, FT2024001..."
+                      placeholder={getPlaceholder()}
                       className="record-input"
                       autoComplete="off"
                     />
