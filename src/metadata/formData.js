@@ -189,7 +189,8 @@ const formData = {
       "label": "Address",
       "type": "string",
       "multi": true,
-      "mandatory": true
+      "mandatory": true,
+      "max_multifield": 3
     },
     "attachment": {
       "field_name": "attachment",

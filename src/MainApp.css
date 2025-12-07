@@ -601,6 +601,9 @@
 }
 
 .explorer-info {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
   flex: 1;
 }
 

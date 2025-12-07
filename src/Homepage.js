@@ -120,7 +120,7 @@ const HomePage = () => {
           <div className="footer-right">
             <span>Session: Active</span>
             <span className="footer-separator">•</span>
-            <span>© 2024 All Rights Reserved</span>
+            <span>© 2025 All Rights Reserved by <b>1Technologies</b></span>
           </div>
         </div>
       </footer>
