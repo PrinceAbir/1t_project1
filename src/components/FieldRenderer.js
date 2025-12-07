@@ -15,6 +15,7 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
     readOnly,
     accept,
     pattern
+    
   } = field;
 
   const [dropdownOptions, setDropdownOptions] = useState(options || []);

@@ -43,7 +43,6 @@ const T24TransactExplorer = ({ module }) => {
     };
   }, [metadata]);
 
-  // 🔥 Initialize form state on load
   useEffect(() => {
     const initial = {};
     const err = {};
@@ -119,6 +118,7 @@ const T24TransactExplorer = ({ module }) => {
     return false;
   };
 
+  
   /** ------------------ ACTION HANDLERS ------------------ **/
   const handleDelete = () => {
     if (window.confirm("Delete transaction?")) {
