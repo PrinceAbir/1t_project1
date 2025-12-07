@@ -171,6 +171,7 @@ body {
   margin-bottom: -1px;
 }
 
+/*
 .tab-button.has-error::after {
   content: '!';
   position: absolute;
@@ -194,6 +195,7 @@ body {
 .tab-button:not(.has-error)::after {
   display: none;
 }
+*/
 
 @keyframes bounce {
   0%, 100% { transform: scale(1); }
