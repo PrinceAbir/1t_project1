@@ -182,27 +182,6 @@ const MainApp = () => {
 
   return (
     <div className="main-app">
-      {/* Header */}
-      <header className="ma-header">
-        <div className="ma-header-left">
-          <button className="back-home-btn" onClick={handleBackToHome}>
-            ← Home
-          </button>
-          <div className="app-info">
-            <span className="app-icon">{getModuleIcon()}</span>
-            <div>
-              <h1>{getModuleName()} Module</h1>
-              <p className="app-subtitle">Record Management System</p>
-            </div>
-          </div>
-        </div>
-        <div className="ma-header-right">
-          <div className="session-info">
-            <span className="current-user">Admin User</span>
-            <span className="session-status">● Active</span>
-          </div>
-        </div>
-      </header>
 
       {/* Main Content */}
       <main className="ma-main">
@@ -214,10 +193,8 @@ const MainApp = () => {
                 <div className="input-group">
                   <div className="input-label-row">
                     <label htmlFor="recordInput">
-                      <span className="label-icon">🔢</span>
-                      Record ID:
+                      CUSTOMER
                     </label>
-                    <span className="input-hint">Enter a new or existing record ID</span>
                   </div>
                   <div className="input-field">
                     <input

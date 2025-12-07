@@ -98,9 +98,9 @@
 /* Record Input Section */
 .record-input-section {
   background: white;
-  border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+
 }
 
 .input-header {
@@ -125,24 +125,28 @@
 
 .input-container {
   padding: 2rem;
+  height: 100vh;
 }
 
 .input-group {
   margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .input-label-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  padding: 0.6rem;
 }
 
 .input-label-row label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 500;
   color: #4a5568;
   text-transform: uppercase;
@@ -160,17 +164,21 @@
 
 .input-field {
   position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: start;
+  align-items: center;
+
 }
 
 .record-input {
-  width: 100%;
+  width:44rem;
   padding: 1rem;
   font-size: 1rem;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
   background: white;
   transition: all 0.2s ease;
-  margin-bottom: 1rem;
 }
 
 .record-input:focus {
@@ -182,7 +190,11 @@
 .input-actions {
   display: flex;
   gap: 0.75rem;
-  flex-wrap: wrap;
+  margin: 0.5rem;
+  flex-direction:row;
+  align-items: center;
+  margin-left: 1rem;
+  
 }
 
 .action-btn {
@@ -192,8 +204,9 @@
   padding: 0.75rem 1.25rem;
   border: 2px solid;
   border-radius: 8px;
+  align-items: center;
   background: white;
-  font-size: 0.875rem;
+  font-size: 0.6rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -202,7 +215,7 @@
 }
 
 .action-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.8;
   cursor: not-allowed;
   transform: none !important;
 }
@@ -639,7 +652,7 @@
 }
 
 .explorer-content {
-  padding: 1rem;
+  padding: 5px;
 }
 
 /* Footer */
