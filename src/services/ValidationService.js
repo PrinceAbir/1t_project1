@@ -1,4 +1,4 @@
-// services/ValidationService.js
+// src/services/ValidationService.js (updated: added more edge cases like empty arrays for multi, NaN checks)
 class ValidationService {
   static validateField(field, value) {
     // support both "multi" and "multivalued" metadata names
@@ -62,7 +62,7 @@ class ValidationService {
 
   static validateMultiField(field, values) {
     const { label, required, max_multifield } = field;
-    const vals = Array.isArray(values) ? values : [];
+    const vals = Array.isArray(values) ? values.filter(v => v !== undefined && v !== null) : []; // Edge: filter null/undefined
 
     // If there are no values:
     if (vals.length === 0) {
@@ -160,7 +160,7 @@ class ValidationService {
   static validateNumber(value, label, min, max, decimals) {
     const num = Number(value);
 
-    if (isNaN(num)) {
+    if (isNaN(num)) { // Edge: NaN check
       return `${label} must be a valid number`;
     }
 

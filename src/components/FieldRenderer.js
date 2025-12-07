@@ -1,7 +1,7 @@
-// FieldRenderer.jsx
-import React, { useState, useEffect } from 'react';
+// src/components/FieldRenderer.jsx (updated: added readOnly prop handling based on mode, dynamic options edge, memoized)
+import React, { useState, useEffect, memo } from 'react';
 
-const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
+const FieldRenderer = memo(({ field, value, onChange, error, tabId, readOnly = false }) => {
   const {
     id,
     label,
@@ -13,7 +13,6 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
     max,
     max_multifield,
     decimals,
-    readOnly,
     accept,
     pattern
     
@@ -35,7 +34,7 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
       'DEPARTMENT': ['HR', 'Finance', 'IT', 'Marketing', 'Operations'],
       'STATUS': ['Active', 'Inactive', 'Pending', 'Closed']
     };
-    setDropdownOptions(dynamicData[source] || []);
+    setDropdownOptions(dynamicData[source] || []); // Edge: empty if no source
   };
 
   const getInputProps = () => {
@@ -98,6 +97,7 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
   };
 
   const handleChange = (newValue, index = null) => {
+    if (readOnly) return; // Edge: no change if readOnly
     if (multi) {
       const currentValues = Array.isArray(value) ? [...value] : [''];
       if (index !== null) {
@@ -112,6 +112,7 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
   };
 
   const addMultiField = () => {
+    if (readOnly) return;
     const currentValues = Array.isArray(value) ? [...value] : [''];
     if (!max_multifield || currentValues.length < max_multifield) {
       handleChange('', currentValues.length);
@@ -119,6 +120,7 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
   };
 
   const removeMultiField = (index) => {
+    if (readOnly) return;
     const currentValues = Array.isArray(value) ? [...value] : [''];
     if (currentValues.length > 1) {
       const newValues = currentValues.filter((_, i) => i !== index);
@@ -241,6 +243,6 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
       </div>
     </div>
   );
-};
+});
 
 export default FieldRenderer;

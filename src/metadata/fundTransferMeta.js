@@ -1,5 +1,5 @@
-
-const formData = {
+// src/metadata/fundTransferMeta.js
+const fundTransferMeta = {
   "application": "payment",
   "type": "core",
   "fields": {
@@ -31,7 +31,7 @@ const formData = {
       "type": "select",
       "multi": false,
       "mandatory": true,
-      "oppotions": [123, 456]
+      "options": [123, 456] // Fixed typo from "oppotions"
     },
     "credit_currency": {
       "field_name": "credit_currency",
@@ -214,6 +214,6 @@ const formData = {
       "mandatory": true
     }
   }
-}
+};
 
-export default formData;
+export default fundTransferMeta;

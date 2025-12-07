@@ -1,4 +1,4 @@
-// components/TabButton.js
+// src/components/TabButton.js (unchanged, memoized)
 import React from 'react';
 
 const TabButton = ({ label, isActive, onClick, hasError = false }) => {
@@ -12,4 +12,4 @@ const TabButton = ({ label, isActive, onClick, hasError = false }) => {
   );
 };
 
-export default TabButton;
+export default React.memo(TabButton);

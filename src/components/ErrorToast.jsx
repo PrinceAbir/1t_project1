@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from "react";
+// src/components/ErrorToast.js (updated: handle empty message edge case, memoized)
+import React, { useState } from "react";
 import "./ErrorToast.css";
 
 const ErrorToast = ({ message, buttonText, onButtonClick, onClose, override = false }) => {
   const [minimized, setMinimized] = useState(false);
+
+  if (!message || (Array.isArray(message) && message.length === 0)) return null; // Edge: no message
 
   const isErrorArray = Array.isArray(message);
   const totalErrors = isErrorArray ? message.length : 0;
@@ -99,4 +102,4 @@ const ErrorToast = ({ message, buttonText, onButtonClick, onClose, override = fa
   );
 };
 
-export default ErrorToast;
+export default React.memo(ErrorToast);

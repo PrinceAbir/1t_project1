@@ -1,7 +1,8 @@
+// src/services/DataTransformer.js (updated: handle edge cases like empty fields, better type mapping)
 class DataTransformer {
   // Convert metadata to T24 field array for UI
   static metadataToT24Fields(metadata) {
-    if (!metadata?.fields) return [];
+    if (!metadata?.fields) return []; // Edge: no fields
 
     if (Array.isArray(metadata.fields)) {
       return metadata.fields.map((field) => this.transformField(field));
@@ -54,7 +55,7 @@ class DataTransformer {
     if (type === "string") return "text";
     if (type === "int") return "number";
     
-    return "text";
+    return "text"; // Default edge case
   }
 
   static getFieldType(field) {
@@ -80,7 +81,7 @@ class DataTransformer {
 
     const fieldsArray = Array.isArray(metadata.fields)
       ? metadata.fields
-      : Object.keys(metadata.fields).map((key) => ({
+      : Object.keys(metadata.fields || {}).map((key) => ({ // Edge: empty fields
           ...metadata.fields[key],
           id: metadata.fields[key].field_name,
         }));

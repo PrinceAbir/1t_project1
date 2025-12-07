@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo } from "react";
+// src/components/T24TransactExplorer.js (updated: handle mode prop for view/readOnly, integrate view logic, handle no metadata, memoize computations, disable actions in view)
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import ActionButtons from "./ActionButtons";
 import TabButton from "./TabButton";
 import FieldRenderer from "./FieldRenderer";
@@ -8,7 +9,12 @@ import ErrorToast from "./ErrorToast";
 import META_MAP from "../metadata"; // dynamic metadata loader
 import "../App.css";
 
-const T24TransactExplorer = ({ module }) => {
+const T24TransactExplorer = ({ module, mode = 'create' }) => {
+  const metadata = META_MAP[module];
+  if (!metadata) {
+    return <div>No metadata for module: {module}</div>;
+  }
+
   const [activeTab, setActiveTab] = useState("MAIN");
   const [formState, setFormState] = useState({});
   const [validationErrors, setValidationErrors] = useState({});
@@ -20,23 +26,19 @@ const T24TransactExplorer = ({ module }) => {
   const [toastButton, setToastButton] = useState(null);
   const [showToast, setShowToast] = useState(false);
 
-  const triggerToast = (msg, btnText = null, btnAction = null) => {
+  const isViewMode = mode === 'view'; // Determine readOnly based on mode
+
+  const triggerToast = useCallback((msg, btnText = null, btnAction = null) => {
     setToastMessage(msg);
     setToastButton(btnText ? { text: btnText, action: btnAction } : null);
     setShowToast(true);
-  };
-
+  }, []);
 
   // helper to build DOM IDs consistent with FieldRenderer
   const buildFieldId = (tab, fieldId, index = null) =>
     index === null ? `${tab}_${fieldId}` : `${tab}_${fieldId}_${index}`;
 
-  // load metadata
-  const metadata = META_MAP[module];
-
   const t24FormData = useMemo(() => {
-    if (!metadata) return {};
-
     return {
       MAIN: {
         title: `${metadata.application.toUpperCase()} / ${metadata.type}`,
@@ -68,7 +70,7 @@ const T24TransactExplorer = ({ module }) => {
     setIsLoading(false);
   }, [t24FormData]);
 
-  const handleFieldChange = (fieldName, value) => {
+  const handleFieldChange = useCallback((fieldName, value) => {
     setFormState((p) => ({
       ...p,
       [activeTab]: { ...p[activeTab], [fieldName]: value }
@@ -77,9 +79,11 @@ const T24TransactExplorer = ({ module }) => {
     if (validationErrors[fieldName]) {
       setValidationErrors((prev) => ({ ...prev, [fieldName]: Array.isArray(prev[fieldName]) ? [] : "" }));
     }
-  };
+  }, [activeTab, validationErrors]);
 
-  const handleValidate = () => {
+  const handleValidate = useCallback(() => {
+    if (isViewMode) return true; // No validation in view
+
     const fields = t24FormData[activeTab].fields;
     const data = formState[activeTab] || {};
 
@@ -131,9 +135,10 @@ const T24TransactExplorer = ({ module }) => {
 
     triggerToast(toastErrors, "View Errors");
     return false;
-  };
+  }, [activeTab, formState, t24FormData, triggerToast, isViewMode]);
 
   const handleDelete = () => {
+    if (isViewMode) return; // No delete in view
     if (window.confirm("Delete transaction?")) {
       setFormState((p) => ({ ...p, [activeTab]: {} }));
       triggerToast("Transaction deleted");
@@ -141,6 +146,7 @@ const T24TransactExplorer = ({ module }) => {
   };
 
   const handleCommit = () => {
+    if (isViewMode) return;
     if (handleValidate()) {
       const result = DataTransformer.toT24Submission(
         formState[activeTab],
@@ -151,12 +157,11 @@ const T24TransactExplorer = ({ module }) => {
     }
   };
 
-  const handleAuthorize = () => handleValidate() && triggerToast("Authorized");
-  const handleCopy = () => triggerToast("Copied");
-  const handleHold = () => triggerToast("Held");
+  // removed unused handlers: authorize/copy (not wired to UI currently)
+  const handleHold = () => !isViewMode && triggerToast("Held");
   const handleBack = () => triggerToast("Back");
 
-  if (isLoading || !metadata) return <div className="loading">Loading...</div>;
+  if (isLoading) return <div className="loading">Loading...</div>;
 
   const currentTab = t24FormData[activeTab];
   const currentData = formState[activeTab] || {};
@@ -197,10 +202,7 @@ const T24TransactExplorer = ({ module }) => {
             onHold={handleHold}
             onValidate={handleValidate}
             onCommit={handleCommit}
-            onAuthorize={handleAuthorize}
-            onDelete={handleDelete}
-            onCopy={handleCopy}
-            disabled={!currentTab}
+            disabled={!currentTab || isViewMode} // Disable in view mode
           />
         </div>
 
@@ -214,6 +216,7 @@ const T24TransactExplorer = ({ module }) => {
                 onChange={handleFieldChange}
                 error={validationErrors[field.id]}
                 tabId={activeTab}
+                readOnly={isViewMode} // Pass readOnly based on mode
               />
             ))}
           </div>
@@ -223,4 +226,4 @@ const T24TransactExplorer = ({ module }) => {
   );
 };
 
-export default T24TransactExplorer;
+export default React.memo(T24TransactExplorer);

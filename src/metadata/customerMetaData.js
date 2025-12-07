@@ -1,3 +1,4 @@
+// src/metadata/customerMetaData.js (unchanged)
 const customerMetaData ={
     "application": "customer",
     "type": "core",
