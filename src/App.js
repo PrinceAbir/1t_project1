@@ -1,14 +1,22 @@
 // App.js
 import React from 'react';
-import Homepage from './Homepage';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import HomePage from './Homepage';
+import MainApp from './MainApp';
 import './App.css';
 
-const App = () => {
+function App() {
   return (
-    <div className="App full-screen">
-      <Homepage />
-    </div>
+    <Router>
+      <div className="App">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/mainapp" element={<MainApp />} />
+          {/* Add other routes as needed */}
+        </Routes>
+      </div>
+    </Router>
   );
-};
+}
 
 export default App;

@@ -1,3 +1,4 @@
+// FieldRenderer.jsx
 import React, { useState, useEffect } from 'react';
 
 const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
@@ -36,7 +37,6 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
     setDropdownOptions(dynamicData[source] || []);
   };
 
-  // Determine input type and attributes dynamically
   const getInputProps = () => {
     switch (type) {
       case 'int':
@@ -92,7 +92,6 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
         return { as: 'textarea', maxLength: max, placeholder: `Enter ${label.toLowerCase()}`, required, readOnly };
 
       default:
-        // default text input
         return { type: 'text', minLength: min, maxLength: max, pattern, placeholder: `Enter ${label.toLowerCase()}`, required, readOnly };
     }
   };
@@ -130,47 +129,62 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
 
   const renderMultiFields = () => {
     const values = Array.isArray(value) ? value : [''];
+    // error may be string '' or array of messages
+    const errArray = Array.isArray(error) ? error : [];
+
     return (
       <div className="multi-fields-container">
-        {values.map((val, idx) => (
-          <div key={idx} className="multi-field-row">
-            {field.options || type === 'account' ? (
-              <select
-                id={`${tabId}_${id}_${idx}`}
-                value={val || ''}
-                onChange={(e) => handleChange(e.target.value, idx)}
-                required={required && idx === 0}
-                disabled={readOnly}
-                className={`t24-input ${error ? 'error' : ''}`}
-              >
-                <option value="">Select...</option>
-                {(dropdownOptions.length ? dropdownOptions : options || []).map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            ) : inputProps.as === 'textarea' ? (
-              <textarea
-                id={`${tabId}_${id}_${idx}`}
-                value={val || ''}
-                onChange={(e) => handleChange(e.target.value, idx)}
-                {...inputProps}
-                className={`t24-input ${error ? 'error' : ''}`}
-              />
-            ) : (
-              <input
-                id={`${tabId}_${id}_${idx}`}
-                value={val || ''}
-                onChange={(e) => handleChange(e.target.value, idx)}
-                {...inputProps}
-                className={`t24-input ${error ? 'error' : ''}`}
-              />
-            )}
+        {values.map((val, idx) => {
+          const perError = errArray[idx] || '';
+          return (
+            <div key={idx} className="multi-field-row">
+              {field.options || type === 'account' ? (
+                <div style={{ width: '100%' }}>
+                  <select
+                    id={`${tabId}_${id}_${idx}`}
+                    value={val || ''}
+                    onChange={(e) => handleChange(e.target.value, idx)}
+                    required={required && idx === 0}
+                    disabled={readOnly}
+                    className={`t24-input ${perError ? 'error' : ''}`}
+                  >
+                    <option value="">Select...</option>
+                    {(dropdownOptions.length ? dropdownOptions : options || []).map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                  {perError && <div className="t24-error">{perError}</div>}
+                </div>
+              ) : inputProps.as === 'textarea' ? (
+                <div style={{ width: '100%' }}>
+                  <textarea
+                    id={`${tabId}_${id}_${idx}`}
+                    value={val || ''}
+                    onChange={(e) => handleChange(e.target.value, idx)}
+                    {...inputProps}
+                    className={`t24-input ${perError ? 'error' : ''}`}
+                  />
+                  {perError && <div className="t24-error">{perError}</div>}
+                </div>
+              ) : (
+                <div style={{ width: '100%' }}>
+                  <input
+                    id={`${tabId}_${id}_${idx}`}
+                    value={val || ''}
+                    onChange={(e) => handleChange(e.target.value, idx)}
+                    {...inputProps}
+                    className={`t24-input ${perError ? 'error' : ''}`}
+                  />
+                  {perError && <div className="t24-error">{perError}</div>}
+                </div>
+              )}
 
-            {values.length > 1 && !readOnly && (
-              <button type="button" className="remove-multi-field" onClick={() => removeMultiField(idx)}>✕</button>
-            )}
-          </div>
-        ))}
+              {values.length > 1 && !readOnly && (
+                <button type="button" className="remove-multi-field" onClick={() => removeMultiField(idx)}>✕</button>
+              )}
+            </div>
+          );
+        })}
         {(!max_multifield || values.length < max_multifield) && !readOnly && (
           <button type="button" className="add-multi-field" onClick={addMultiField}>
             + Add {label}
@@ -180,9 +194,11 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
     );
   };
 
+  const singleError = !Array.isArray(error) ? error : '';
+
   return (
     <div className={`t24-form-field`}>
-      <label htmlFor={`${tabId}_${id}`} className={`t24-label ${error ? 'error' : ''}`}>
+      <label htmlFor={`${tabId}_${id}`} className={`t24-label ${singleError ? 'error' : ''}`}>
         {label}{required && <span className="required-asterisk">*</span>}
       </label>
 
@@ -195,7 +211,7 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
               onChange={(e) => handleChange(e.target.value)}
               required={required}
               disabled={readOnly}
-              className={`t24-input ${error ? 'error' : ''}`}
+              className={`t24-input ${singleError ? 'error' : ''}`}
             >
               <option value="">Select...</option>
               {(dropdownOptions.length ? dropdownOptions : options || []).map(opt => (
@@ -208,7 +224,7 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
               value={value || ''}
               onChange={(e) => handleChange(e.target.value)}
               {...inputProps}
-              className={`t24-input ${error ? 'error' : ''}`}
+              className={`t24-input ${singleError ? 'error' : ''}`}
             />
           ) : (
             <input
@@ -216,11 +232,11 @@ const FieldRenderer = ({ field, value, onChange, error, tabId }) => {
               value={value || ''}
               onChange={(e) => handleChange(e.target.value)}
               {...inputProps}
-              className={`t24-input ${error ? 'error' : ''}`}
+              className={`t24-input ${singleError ? 'error' : ''}`}
             />
           )
         )}
-        {error && <div className="t24-error">{error}</div>}
+        {!multi && singleError && <div className="t24-error">{singleError}</div>}
       </div>
     </div>
   );
