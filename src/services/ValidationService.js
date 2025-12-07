@@ -1,18 +1,17 @@
 // services/ValidationService.js
 class ValidationService {
   static validateField(field, value) {
-    const { label, type, required, min, max, multivalued, pattern, decimals } = field;
-    
-    if (multivalued) {
+    // support both "multi" and "multivalued" metadata names
+    const isMulti = !!(field.multivalued || field.multi);
+    if (isMulti) {
       return this.validateMultiField(field, value);
     }
-    
     return this.validateSingleField(field, value);
   }
 
   static validateSingleField(field, value) {
     const { label, type, required, min, max, pattern, decimals } = field;
-    const val = value ? value.toString().trim() : '';
+    const val = value !== undefined && value !== null ? value.toString().trim() : '';
 
     // Required validation
     if (required && !val) {
@@ -30,67 +29,91 @@ class ValidationService {
       case 'textarea':
       case 'reference':
         return this.validateString(val, label, min, max, pattern);
-      
+
       case 'account':
         return this.validateString(val, label, min, max);
-      
-      case 'email':
+
+      case 'email': {
         const stringError = this.validateString(val, label, min, max);
         if (stringError) return stringError;
         return this.validateEmail(val, label);
-      
-      case 'tel':
+      }
+
+      case 'tel': {
         const telStringError = this.validateString(val, label, min, max);
         if (telStringError) return telStringError;
         return this.validateTel(val, label, pattern);
-      
+      }
+
       case 'amount':
       case 'number':
         return this.validateNumber(val, label, min, max, decimals);
-      
+
       case 'date':
         return this.validateDate(val, label);
-      
+
       case 'file':
         return this.validateFile(val, label);
-      
+
       default:
         return this.validateString(val, label, min, max, pattern);
     }
   }
 
   static validateMultiField(field, values) {
-    const { label, type, required, min, max, max_multifield, pattern, decimals } = field;
+    const { label, required, max_multifield } = field;
     const vals = Array.isArray(values) ? values : [];
 
-    // Check if at least one value is required
-    if (required && vals.every(v => !v || v.toString().trim() === '')) {
-      return `${label} requires at least one entry`;
+    // If there are no values:
+    if (vals.length === 0) {
+      if (required) {
+        // return single array entry pointing to index 0
+        return [`${label} requires at least one entry`];
+      }
+      return [];
     }
 
-    // Validate each non-empty value
+    // Build per-index error array ('' means no error)
+    const errors = new Array(vals.length).fill('');
+
+    // If required and all entries empty => error on first entry
+    const allEmpty = vals.every(v => !v || v.toString().trim() === '');
+    if (required && allEmpty) {
+      errors[0] = `${label} requires at least one entry`;
+      // still continue to other checks (but others likely empty)
+    }
+
+    // Validate each non-empty value using single-field rules
     for (let i = 0; i < vals.length; i++) {
       const val = vals[i];
-      if (val && val.toString().trim()) {
-        const error = this.validateSingleField(field, val);
-        if (error) return `Entry ${i + 1}: ${error}`;
+      if (val !== undefined && val !== null && val.toString().trim() !== '') {
+        const err = this.validateSingleField(field, val);
+        if (err) {
+          errors[i] = `Entry ${i + 1}: ${err}`;
+        }
+      } else {
+        // If the particular entry is empty and field is required AND it's the only entry (or first)
+        if (required && vals.length === 1) {
+          errors[i] = `${label} is required`;
+        }
       }
     }
 
     // Check max_multifield limit
     if (max_multifield && vals.length > max_multifield) {
-      return `${label} cannot have more than ${max_multifield} entries`;
+      // add general error at index 0 (or push to errors[0])
+      errors[0] = `${label} cannot have more than ${max_multifield} entries`;
     }
 
-    return '';
+    return errors;
   }
 
   static validateString(value, label, min, max, pattern) {
-    if (min && value.length < min) {
+    if (min !== undefined && value.length < min) {
       return `${label} must be at least ${min} characters`;
     }
-    
-    if (max && value.length > max) {
+
+    if (max !== undefined && value.length > max) {
       return `${label} must be at most ${max} characters`;
     }
 
@@ -104,7 +127,7 @@ class ValidationService {
         console.error(`Invalid regex pattern for ${label}:`, pattern);
       }
     }
-    
+
     return '';
   }
 
@@ -117,7 +140,6 @@ class ValidationService {
   }
 
   static validateTel(value, label, pattern) {
-    // Basic phone validation if no pattern provided
     if (pattern) {
       try {
         const regex = new RegExp(pattern);
@@ -128,7 +150,6 @@ class ValidationService {
         console.error(`Invalid regex pattern for ${label}:`, pattern);
       }
     } else {
-      // Basic validation: contains digits
       if (!/\d/.test(value)) {
         return `${label} must contain at least one digit`;
       }
@@ -138,27 +159,26 @@ class ValidationService {
 
   static validateNumber(value, label, min, max, decimals) {
     const num = Number(value);
-    
+
     if (isNaN(num)) {
       return `${label} must be a valid number`;
     }
-    
+
     if (min !== undefined && num < min) {
       return `${label} must be at least ${min}`;
     }
-    
+
     if (max !== undefined && num > max) {
       return `${label} must be at most ${max}`;
     }
 
-    // Validate decimal places if specified
     if (decimals !== undefined) {
       const decimalPattern = new RegExp(`^-?\\d+(\\.\\d{1,${decimals}})?$`);
       if (!decimalPattern.test(value)) {
         return `${label} can have at most ${decimals} decimal places`;
       }
     }
-    
+
     return '';
   }
 
@@ -181,7 +201,7 @@ class ValidationService {
   }
 
   static validateFile(value, label) {
-    // File validation is minimal since file handling is browser-based
+    // Minimal file validation; extend as needed
     if (!value) {
       return '';
     }
@@ -189,13 +209,28 @@ class ValidationService {
   }
 
   static validateAllFields(fields, data) {
+    // returns an errors object where:
+    // - for single fields: errors[field.name] = '' or 'message'
+    // - for multi fields: errors[field.name] = [] (array of per-index messages) OR [] empty if none
     const errors = {};
     let isValid = true;
 
     fields.forEach(field => {
-      const error = this.validateField(field, data[field.name]);
-      errors[field.name] = error;
-      if (error) isValid = false;
+      const name = field.name;
+      const val = data ? data[name] : undefined;
+      const error = this.validateField(field, val);
+
+      // normalize: if validateMultiField returned undefined -> set [] (no errors)
+      if (Array.isArray(error)) {
+        // check if any non-empty in array
+        const hasAny = error.some(e => e && e.toString().trim() !== '');
+        if (hasAny) isValid = false;
+        errors[name] = error;
+      } else {
+        // string
+        if (error && error.toString().trim() !== '') isValid = false;
+        errors[name] = error || '';
+      }
     });
 
     return { errors, isValid };

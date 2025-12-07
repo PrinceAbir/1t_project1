@@ -4,16 +4,40 @@ import "./ErrorToast.css";
 const ErrorToast = ({ message, buttonText, onButtonClick, onClose, override = false }) => {
   const [minimized, setMinimized] = useState(false);
 
- 
-
   const isErrorArray = Array.isArray(message);
   const totalErrors = isErrorArray ? message.length : 0;
+
+  /** -----------------------------------------
+   * Scroll to field inside .t24-form-container
+   * Accurate scroll using boundingRect
+   ----------------------------------------- **/
+  const scrollToField = (fieldId) => {
+    const el = document.getElementById(fieldId);
+    if (!el) return;
+
+    const container = document.querySelector(".t24-form-container");
+    if (!container) return;
+
+    const elRect = el.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    // Calculate element’s position relative to container
+    const scrollPos = elRect.top - containerRect.top + container.scrollTop;
+
+    container.scrollTo({
+      top: scrollPos - 80,   // adjust for padding or header
+      behavior: "smooth",
+    });
+
+    // Prevent default browser scroll
+    el.focus({ preventScroll: true });
+  };
 
   return (
     <div className="toast-container">
       <div className="toast-box">
 
-        {/* Header: Total Errors + Minimize Toggle */}
+        {/* Header */}
         {isErrorArray && (
           <div className="toast-header">
             <span className="toast-error-count">Total Errors: {totalErrors}</span>
@@ -22,17 +46,14 @@ const ErrorToast = ({ message, buttonText, onButtonClick, onClose, override = fa
               role="button"
               tabIndex={0}
               onClick={() => setMinimized(!minimized)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") setMinimized(!minimized);
-              }}
-              title={minimized ? "Expand" : "Minimize"}
+              onKeyDown={(e) => ["Enter", " "].includes(e.key) && setMinimized(!minimized)}
             >
               {minimized ? "▾" : "▴"}
             </span>
           </div>
         )}
 
-        {/* Error Messages */}
+        {/* Error List */}
         {!minimized && (
           <div className="toast-message">
             {isErrorArray ? (
@@ -41,24 +62,10 @@ const ErrorToast = ({ message, buttonText, onButtonClick, onClose, override = fa
                   <div
                     key={index}
                     className="toast-error-item"
-                    onClick={() => {
-                      const el = document.getElementById(err.field);
-                      if (el) {
-                        el.scrollIntoView({ behavior: "smooth", block: "center" });
-                        el.focus();
-                      }
-                    }}
+                    onClick={() => scrollToField(err.field)}
                     role="button"
                     tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        const el = document.getElementById(err.field);
-                        if (el) {
-                          el.scrollIntoView({ behavior: "smooth", block: "center" });
-                          el.focus();
-                        }
-                      }
-                    }}
+                    onKeyDown={(e) => ["Enter", " "].includes(e.key) && scrollToField(err.field)}
                   >
                     • <strong>{err.field}</strong>: {err.message}
                   </div>
@@ -70,19 +77,19 @@ const ErrorToast = ({ message, buttonText, onButtonClick, onClose, override = fa
           </div>
         )}
 
-        {/* Show override button only */}
-        {override && buttonText && (
+        {/* Optional Button */}
+        {/* {override && buttonText && (
           <button className="toast-button" onClick={onButtonClick}>
             {buttonText}
           </button>
-        )}
+        )} */}
 
         {/* Close */}
         <span
           className="toast-close"
-          onClick={onClose}
           role="button"
           tabIndex={0}
+          onClick={onClose}
           onKeyDown={(e) => e.key === "Enter" && onClose()}
         >
           ×
