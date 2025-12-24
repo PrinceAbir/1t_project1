@@ -1,16 +1,22 @@
 // services/ValidationService.js
 class ValidationService {
   static validateField(field, value) {
-    // support both "multi" and "multivalued" metadata names
-    const isMulti = !!(field.multivalued || field.multi);
+    // normalize common metadata names so callers can use either
+    const normalizedField = Object.assign({}, field, {
+      required: field.required ?? field.mandatory,
+      multivalued: field.multivalued ?? field.multi,
+    });
+
+    const isMulti = !!normalizedField.multivalued;
     if (isMulti) {
-      return this.validateMultiField(field, value);
+      return this.validateMultiField(normalizedField, value);
     }
-    return this.validateSingleField(field, value);
+    return this.validateSingleField(normalizedField, value);
   }
 
   static validateSingleField(field, value) {
-    const { label, type, required, min, max, pattern, decimals } = field;
+    const { label, type, min, max, pattern, decimals } = field;
+    const required = field.required ?? field.mandatory;
     const val = value !== undefined && value !== null ? value.toString().trim() : '';
 
     // Required validation
@@ -61,7 +67,9 @@ class ValidationService {
   }
 
   static validateMultiField(field, values) {
-    const { label, required, max_multifield } = field;
+    const { label } = field;
+    const required = field.required ?? field.mandatory;
+    const max_multifield = field.max_multifield ?? field.maxMultifield;
     const vals = Array.isArray(values) ? values : [];
 
     // If there are no values:
@@ -76,26 +84,29 @@ class ValidationService {
     // Build per-index error array ('' means no error)
     const errors = new Array(vals.length).fill('');
 
-    // If required and all entries empty => error on first entry
-    const allEmpty = vals.every(v => !v || v.toString().trim() === '');
+    // Determine if all entries are empty
+    const allEmpty = vals.length > 0 && vals.every(v => !v || v.toString().trim() === '');
     if (required && allEmpty) {
-      errors[0] = `${label} requires at least one entry`;
-      // still continue to other checks (but others likely empty)
+      for (let i = 0; i < vals.length; i++) {
+        errors[i] = `Entry ${i + 1}: ${label} is required`;
+      }
+      // we still continue to allow type-specific checks to overwrite more specific messages
     }
 
-    // Validate each non-empty value using single-field rules
+    // Validate each entry using single-field rules; for empty entries if required, mark error per-index
     for (let i = 0; i < vals.length; i++) {
       const val = vals[i];
-      if (val !== undefined && val !== null && val.toString().trim() !== '') {
-        const err = this.validateSingleField(field, val);
-        if (err) {
-          errors[i] = `Entry ${i + 1}: ${err}`;
+      const isEmpty = val === undefined || val === null || val.toString().trim() === '';
+      if (isEmpty) {
+        if (required) {
+          errors[i] = errors[i] || `Entry ${i + 1}: ${label} is required`;
         }
-      } else {
-        // If the particular entry is empty and field is required AND it's the only entry (or first)
-        if (required && vals.length === 1) {
-          errors[i] = `${label} is required`;
-        }
+        continue;
+      }
+
+      const err = this.validateSingleField(field, val);
+      if (err) {
+        errors[i] = `Entry ${i + 1}: ${err}`;
       }
     }
 

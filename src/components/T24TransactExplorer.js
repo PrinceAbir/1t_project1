@@ -51,6 +51,16 @@ const T24TransactExplorer = ({ module }) => {
     };
   }, [metadata]);
 
+  // columns: number of columns to display form fields in (1,2,3)
+  const [columns, setColumns] = useState(() => {
+    // default from metadata if provided, otherwise 1
+    try {
+      return metadata && metadata.columns ? Number(metadata.columns) || 1 : 1;
+    } catch (e) {
+      return 1;
+    }
+  });
+
   useEffect(() => {
     const initial = {};
     const err = {};
@@ -71,6 +81,14 @@ const T24TransactExplorer = ({ module }) => {
     setTabErrors(err);
     setIsLoading(false);
   }, [t24FormData]);
+
+  // update columns if metadata changes (keeps dynamic behavior)
+  useEffect(() => {
+    if (metadata && metadata.columns) {
+      const c = Number(metadata.columns) || 1;
+      if (c > 0 && c !== columns) setColumns(c);
+    }
+  }, [metadata]);
 
   const handleFieldChange = (fieldName, value) => {
     setFormState((p) => ({
@@ -196,7 +214,21 @@ const T24TransactExplorer = ({ module }) => {
       {/* Main Form */}
       <div className="t24-main-content">
         <div className="t24-title-section">
-          <div className="t24-form-title">{currentTab.title}</div>
+            <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
+              <div className="t24-form-title">{currentTab.title}</div>
+              <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
+                <label style={{fontSize:12, color:'#333', fontWeight:600}}>Columns</label>
+                <select
+                  value={columns}
+                  onChange={(e) => setColumns(Number(e.target.value) || 1)}
+                  style={{padding:'6px 8px', borderRadius:4, border:'1px solid #cfd8dc'}}
+                >
+                  <option value={1}>1</option>
+                  <option value={2}>2</option>
+                  <option value={3}>3</option>
+                </select>
+              </div>
+            </div>
 
           <ActionButtons
             onBack={handleBack}
@@ -211,7 +243,10 @@ const T24TransactExplorer = ({ module }) => {
         </div>
 
         <div className="t24-form-container">
-          <div className="t24-form-grid">
+          <div
+            className="t24-form-grid"
+            style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+          >
             {currentTab.fields.map((field) => (
               <FieldRenderer
                 key={field.id}

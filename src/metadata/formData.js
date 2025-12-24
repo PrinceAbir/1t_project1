@@ -2,6 +2,7 @@
 const formData = {
   "application": "payment",
   "type": "core",
+  "columns": 1,
   "fields": {
     "transaction_type": {
       "field_name": "transaction_type",
@@ -190,7 +191,7 @@ const formData = {
       "type": "string",
       "multi": true,
       "mandatory": true,
-      "max_multifield": 3
+      "max_multifield": 3 
     },
     "attachment": {
       "field_name": "attachment",
