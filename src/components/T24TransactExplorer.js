@@ -84,9 +84,6 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
     setIsLoading(false);
   }, [t24FormData]);
 
-<<<<<<< HEAD
-  const handleFieldChange = useCallback((fieldName, value) => {
-=======
   // update columns if metadata changes (keeps dynamic behavior)
   useEffect(() => {
     if (metadata && metadata.columns) {
@@ -95,8 +92,7 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
     }
   }, [metadata]);
 
-  const handleFieldChange = (fieldName, value) => {
->>>>>>> 6313b98466137cf8d30de12b4cffd08848431861
+  const handleFieldChange = useCallback((fieldName, value) => {
     setFormState((p) => ({
       ...p,
       [activeTab]: { ...p[activeTab], [fieldName]: value }

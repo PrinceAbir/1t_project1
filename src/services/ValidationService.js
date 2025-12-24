@@ -67,15 +67,10 @@ class ValidationService {
   }
 
   static validateMultiField(field, values) {
-<<<<<<< HEAD
-    const { label, required, max_multifield } = field;
-    const vals = Array.isArray(values) ? values.filter(v => v !== undefined && v !== null) : []; // Edge: filter null/undefined
-=======
     const { label } = field;
     const required = field.required ?? field.mandatory;
     const max_multifield = field.max_multifield ?? field.maxMultifield;
     const vals = Array.isArray(values) ? values : [];
->>>>>>> 6313b98466137cf8d30de12b4cffd08848431861
 
     // If there are no values:
     if (vals.length === 0) {
