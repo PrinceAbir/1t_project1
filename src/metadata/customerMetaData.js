@@ -5,12 +5,17 @@ const customerMetaData = {
     "customer.name.1": {
       "field_name": "customer_name_1",
       "label": "Customer Name 1",
-      "type": "string",
+      "type": "dropdown",
       "multivalued": true,
       "mandatory": true,
       "min_length": 2,
       "max_length": 100,
-      "max_multifield": 3
+      "max_multifield": 3,
+      "dropdown": {
+        "source": "sector",
+        "type": "application",
+        "selecttion": "SELECT customer WHERE description CONTAINS ''"
+      }
     },
     "customer.name.2": {
       "field_name": "customer_name_2",

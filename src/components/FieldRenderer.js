@@ -1,103 +1,140 @@
-// FieldRenderer.jsx
-import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
+import React, { useState, useEffect, memo, useMemo, useRef } from 'react';
 import './FieldRenderer.css';
 import { loadDropdownOptions } from '../services/DropdownService';
 
 const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', readOnly = false }) => {
-  /* ---------------- Field normalization ---------------- */
   const id = field?.id || field?.field_name || field?.fieldName || '';
   const label = field?.label || field?.label_name || field?.field_name || '';
   const rawType = field?.type || field?.metadata?.type || 'string';
   const type = String(rawType).toLowerCase();
   const required = field?.required ?? field?.metadata?.required ?? field?.mandatory ?? false;
   const multi = field?.multi ?? field?.metadata?.multi ?? field?.multivalued ?? false;
-  const min = field?.min ?? field?.metadata?.min;
-  const max = field?.max ?? field?.metadata?.max;
-  const accept = field?.accept ?? field?.metadata?.accept;
-  const pattern = field?.pattern ?? field?.metadata?.pattern;
+  const options = useMemo(() => (field?.options || field?.metadata?.options || []), [field?.options, field?.metadata?.options]);
   const maxMulti = field?.max_multifield ?? field?.metadata?.max_multifield;
 
-  const options = useMemo(
-    () => field?.options || field?.metadata?.options || [],
-    [field?.options, field?.metadata?.options]
-  );
+  const groupMulti = field?.multivalued ?? field?.multi ?? field?.metadata?.multivalued ?? false;
 
-  /* ---------------- Dropdown options ---------------- */
-  const [dropdownOptions, setDropdownOptions] = useState([]);
+  const [dropdownOptions, setDropdownOptions] = useState(options || []);
+  const [fileError, setFileError] = useState('');
+  const [minimized, setMinimized] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState(() => (Array.isArray(value) ? value.map(() => false) : []));
 
+  // Extract dropdown properties from field
   const { dropdown, dropdownType, dropdownName } = field || {};
 
   useEffect(() => {
-    if (type === 'dropdown') {
-      if (dropdownType === 'dynamic' && dropdownName) {
-        loadDynamicOptions(dropdownName);
-      } else if (dropdown) {
-        setDropdownOptions(loadDropdownOptions(field) || []);
-      } else {
-        setDropdownOptions(options || []);
+    // If field declares a dropdown source, prefer loading via DropdownService
+    try {
+      if (field && field.dropdown && field.dropdown.source) {
+        const mapped = loadDropdownOptions(field);
+        setDropdownOptions(mapped || []);
+        return;
       }
+
+      // legacy/dynamic inline mapping fallback
+      if (dropdown && dropdownType === 'dynamic' && dropdownName) {
+        const dynamicData = {
+          ACCOUNT: ['Checking', 'Savings', 'Business'],
+          CURRENCY: ['USD', 'EUR', 'BDT'],
+          COUNTRY: ['Bangladesh', 'USA', 'UK'],
+          STATUS: ['Active', 'Inactive']
+        };
+        const dynamicOptions = dynamicData[dropdownName] || [];
+        setDropdownOptions(dynamicOptions.map(opt => ({ value: opt, label: opt })));
+        return;
+      }
+
+      setDropdownOptions(options || []);
+    } catch (e) {
+      console.debug('FieldRenderer: error loading dropdown options', e);
+      setDropdownOptions(options || []);
     }
-  }, [type, dropdown, dropdownType, dropdownName, options, field]);
+  }, [field, dropdown, dropdownType, dropdownName, options]);
 
-  const loadDynamicOptions = (source) => {
-    const dynamicData = {
-      ACCOUNT: ['Checking', 'Savings', 'Business'],
-      CURRENCY: ['USD', 'EUR', 'BDT'],
-      COUNTRY: ['Bangladesh', 'USA', 'UK'],
-      STATUS: ['Active', 'Inactive']
+  // Handle expand field events for group collapsing
+  useEffect(() => {
+    const handler = (ev) => {
+      const targetId = ev?.detail;
+      if (!targetId) return;
+
+      const baseId = `${tabId}_${id}`;
+      
+      // If group and the target references this group's index or child, open that group instance
+      if (type === 'group' && targetId.startsWith(baseId + '_')) {
+        const rest = targetId.slice((baseId + '_').length);
+        const parts = rest.split('_');
+        const firstIdx = parseInt(parts[0], 10);
+        if (!Number.isNaN(firstIdx)) {
+          setCollapsedGroups((prev) => {
+            const n = [...(prev || [])];
+            if (n[firstIdx] === true) n[firstIdx] = false;
+            return n;
+          });
+          return;
+        }
+        const lastIdx = parseInt(parts[parts.length - 1], 10);
+        if (!Number.isNaN(lastIdx)) {
+          setCollapsedGroups((prev) => {
+            const n = [...(prev || [])];
+            if (n[lastIdx] === true) n[lastIdx] = false;
+            return n;
+          });
+        }
+      }
     };
-    setDropdownOptions(dynamicData[source] || []);
-  };
 
-  /* ---------------- Children (group fields) ---------------- */
-  const rawChildren = field.children || field.metadata?.children || field.fields || [];
+    document.addEventListener('expandField', handler);
+    return () => document.removeEventListener('expandField', handler);
+  }, [tabId, id, type, value]);
+
+  const rawChildren = field.children || field.metadata?.children || field.fields || field.metadata?.fields || [];
   const children = Array.isArray(rawChildren)
-    ? rawChildren.map(c => ({
-        id: c.id || c.field_name || c.fieldName,
-        label: c.label || c.label_name || c.field_name
+    ? rawChildren.map((c) => ({
+        id: c.id || c.field_name || c.fieldName || String(c.field_name || c.id || ''),
+        label: c.label || c.label_name || c.field_name || c.fieldName || c.id || '',
+        type: String(c.type || c.metadata?.type || 'string').toLowerCase(),
+        max_length: c.max_length ?? c.maxLength ?? c.metadata?.max_length ?? undefined,
+        required: c.required ?? c.mandatory ?? false,
       }))
     : [];
 
-  /* ---------------- Change handlers ---------------- */
-  const emitChange = (val) => onChange && onChange(id, val);
+  const sanitizeTel = (val, maxLen = 15) => String(val || '').replace(/[^0-9+]/g, '').slice(0, maxLen);
 
-  const handleSingleChange = (val) => {
-    if (!readOnly) emitChange(val);
-  };
+  const emitChange = (newVal) => { if (onChange) onChange(id, newVal); };
 
-  const handleMultiChange = (val, idx) => {
+  const handleSingleChange = (val) => { if (readOnly) return; emitChange(val); };
+
+  const handleMultiChange = (val, idx = null) => {
     if (readOnly) return;
     const arr = Array.isArray(value) ? [...value] : [];
-    arr[idx] = val;
+    if (idx === null) arr.push(val); else arr[idx] = val;
     emitChange(arr);
   };
+
+  const removeMulti = (idx) => { if (readOnly) return; const arr = Array.isArray(value) ? [...value] : []; if (arr.length <= 1) return; arr.splice(idx, 1); emitChange(arr); };
 
   const addMulti = () => {
     if (readOnly) return;
     const arr = Array.isArray(value) ? [...value] : [];
     if (maxMulti && arr.length >= maxMulti) return;
-    emitChange([...arr, type === 'group' ? {} : '']);
+    if (type === 'group') {
+      if (!groupMulti) return;
+      const empty = children.reduce((acc, c) => ({ ...acc, [c.id]: '' }), {});
+      emitChange([...arr, empty]);
+    } else {
+      emitChange([...arr, '']);
+    }
   };
 
-  const removeMulti = (idx) => {
-    if (readOnly) return;
-    const arr = [...(Array.isArray(value) ? value : [])];
-    if (arr.length <= 1) return;
-    arr.splice(idx, 1);
-    emitChange(arr);
-  };
+  const handleGroupChildChange = (childId, childVal, groupIdx) => { if (readOnly) return; const groups = Array.isArray(value) ? [...value] : [value || {}]; groups[groupIdx] = { ...(groups[groupIdx] || {}), [childId]: childVal }; emitChange(groups); };
 
-  const handleGroupChildChange = (childId, childVal, groupIdx) => {
-    if (readOnly) return;
-    const groups = Array.isArray(value) ? [...value] : [{}];
-    groups[groupIdx] = { ...(groups[groupIdx] || {}), [childId]: childVal };
-    emitChange(groups);
-  };
+  const toggleCollapse = (idx) => setCollapsedGroups(p => { const n = [...p]; n[idx] = !n[idx]; return n; });
 
-  /* ---------------- Custom Dropdown ---------------- */
+  // Custom Dropdown Component from 2nd code
   const CustomDropdown = ({ options, value, onSelect }) => {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
+    const [highlight, setHighlight] = useState(0);
 
     useEffect(() => {
       const close = (e) => ref.current && !ref.current.contains(e.target) && setOpen(false);
@@ -105,31 +142,299 @@ const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', read
       return () => document.removeEventListener('click', close);
     }, []);
 
+    const display = (() => {
+      if (value === undefined || value === null || value === '') return 'Select...';
+      const found = (options || []).find(o => (o.value ?? o) === value);
+      return (found && (found.label ?? found)) || value;
+    })();
+
+    const selectedOption = (options || []).find(o => (o.value ?? o) === value);
+
     return (
       <div className="custom-dropdown" ref={ref}>
-        <button type="button" className="t24-input" onClick={() => setOpen(!open)} disabled={readOnly}>
-          {value || 'Select...'}
+        <button
+          id={`${tabId}_${id}`}
+          data-alt-id={`${tabId}_${id}_toggle`}
+          type="button"
+          className={`t24-input custom-dropdown-toggle ${open ? 'open' : ''}`}
+          onClick={() => setOpen(!open)}
+          disabled={readOnly}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              setHighlight(h => Math.min(h + 1, (options || []).length - 1));
+              setOpen(true);
+            }
+            if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              setHighlight(h => Math.max(h - 1, 0));
+            }
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              const opt = (options || [])[highlight];
+              if (opt) { onSelect(opt.value ?? opt); setOpen(false); }
+            }
+          }}
+        >
+          <div style={{display:'flex',flexDirection:'column',alignItems:'flex-start'}}>
+            <span className="item-label">{selectedOption?.label ?? display}</span>
+            {selectedOption?.detail && <small className="item-detail">{selectedOption.detail}</small>}
+          </div>
+          <span className="caret">▾</span>
         </button>
         {open && (
           <div className="custom-dropdown-menu">
-            {(options || []).map((o, i) => (
-              <div key={i} onClick={() => { onSelect(o.value ?? o); setOpen(false); }}>
-                {o.label ?? o}
-              </div>
-            ))}
+            {(() => {
+              const opts = options || [];
+              const firstRaw = opts.length ? opts[0].raw : null;
+              const isTable = firstRaw && typeof firstRaw === 'object' && !Array.isArray(firstRaw);
+
+              if (!isTable) {
+                return opts.map((o, i) => (
+                  <div
+                    key={i}
+                    className={`custom-dropdown-item ${i === highlight ? 'highlight' : ''}`}
+                    onMouseEnter={() => setHighlight(i)}
+                    onClick={() => { onSelect(o.value ?? o); setOpen(false); }}
+                    role="option"
+                    aria-selected={i === highlight}
+                  >
+                    <div className="item-label">{o.label ?? o}</div>
+                    {o.detail && <div className="item-detail">{o.detail}</div>}
+                  </div>
+                ));
+              }
+
+              // render as small table: headers from keys of raw object
+              const headers = Object.keys(firstRaw);
+              return (
+                <table className="dropdown-table">
+                  <thead>
+                    <tr>
+                      {headers.map(h => <th key={h}>{h}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {opts.map((o, i) => (
+                      <tr
+                        key={i}
+                        className={i === highlight ? 'highlight' : ''}
+                        onMouseEnter={() => setHighlight(i)}
+                        onClick={() => { onSelect(o.value ?? o); setOpen(false); }}
+                        role="option"
+                        aria-selected={i === highlight}
+                      >
+                        {headers.map(h => <td key={h}>{String((o.raw && o.raw[h]) ?? '')}</td>)}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              );
+            })()}
           </div>
         )}
       </div>
     );
   };
 
-  /* ---------------- Render helpers ---------------- */
+  const renderMulti = () => {
+    const arr = Array.isArray(value) ? value : [''];
+    const errs = Array.isArray(error) ? error : [];
+    return (
+      <div className="multi-fields-container">
+        {arr.map((v, i) => (
+          <div key={i} className="multi-field-row">
+            <input
+              id={`${tabId}_${id}_${i}`}
+              value={v ?? ''}
+              onChange={(e) => {
+                if (type === 'tel' || type === 'phone') {
+                  const maxLen = field?.max_length ?? 15;
+                  handleMultiChange(sanitizeTel(e.target.value, maxLen), i);
+                } else {
+                  handleMultiChange(e.target.value, i);
+                }
+              }}
+              inputMode={type === 'tel' || type === 'phone' ? 'tel' : undefined}
+              maxLength={type === 'tel' || type === 'phone' ? (field?.max_length ?? 15) : undefined}
+              className={`t24-input ${errs[i] ? 'error' : ''}`}
+              disabled={readOnly}
+            />
+            {errs[i] && <div className="t24-error">{errs[i]}</div>}
+            {!readOnly && arr.length > 1 && (
+              <button
+                type="button"
+                className="remove-multi-field"
+                title={`Remove ${label}`}
+                aria-label={`Remove ${label}`}
+                onClick={() => removeMulti(i)}
+              >
+                <span className="remove-icon" aria-hidden>−</span>
+                <span className="sr-only">Remove {label}</span>
+              </button>
+            )}
+          </div>
+        ))}
+        {!readOnly && (!maxMulti || arr.length < maxMulti) && (<button type="button" className="add-multi-field" onClick={addMulti}>+ Add {label}</button>)}
+      </div>
+    );
+  };
+
+  const renderGroup = () => {
+    const groups = Array.isArray(value) ? value : [value || {}];
+    const errs = Array.isArray(error) ? error : [];
+    
+    // Check if we should use table layout from 2nd code
+    if (children.length > 0) {
+      return (
+        <div className="group-fields-container">
+          <table className="group-table">
+            <thead>
+              <tr>
+                {children.map((ch) => (
+                  <th key={ch.id} className="group-table-header">{ch.label}</th>
+                ))}
+                <th className="group-table-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groups.map((grp, gi) => (
+                <tr key={gi} className={`group-instance-row ${collapsedGroups[gi] ? 'collapsed' : ''}`}>
+                  {collapsedGroups[gi] ? (
+                    <td className="group-minimized-cell" colSpan={children.length + 1}>
+                      <div className="group-minimized">{children.map(c => `${c.label}: ${grp[c.id] ?? ''}`).filter(Boolean).join(' · ') || 'Empty'}</div>
+                    </td>
+                  ) : (
+                    <>
+                      {children.map((ch) => {
+                        const childErr = errs[gi] && errs[gi][ch.id] ? errs[gi][ch.id] : '';
+                        return (
+                          <td key={ch.id}>
+                            {((ch.type === 'tel') || (ch.type === 'phone')) ? (
+                              <input
+                                id={`${tabId}_${id}_${gi}_${ch.id}`}
+                                data-alt-id={`${tabId}_${id}_${ch.id}_${gi}`}
+                                value={(grp && grp[ch.id]) || ''}
+                                onChange={(e) => handleGroupChildChange(ch.id, sanitizeTel(e.target.value, ch.max_length ?? field?.max_length ?? 15), gi)}
+                                className={`t24-input ${childErr ? 'error' : ''}`}
+                                disabled={readOnly}
+                                inputMode="tel"
+                                maxLength={ch.max_length ?? field?.max_length ?? 15}
+                              />
+                            ) : (
+                              <input
+                                id={`${tabId}_${id}_${gi}_${ch.id}`}
+                                data-alt-id={`${tabId}_${id}_${ch.id}_${gi}`}
+                                value={(grp && grp[ch.id]) || ''}
+                                onChange={(e) => handleGroupChildChange(ch.id, e.target.value, gi)}
+                                className={`t24-input ${childErr ? 'error' : ''}`}
+                                disabled={readOnly}
+                              />
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td className="row-actions">
+                        {!readOnly && groupMulti && groups.length > 1 && (
+                          <button
+                            type="button"
+                            className="remove-multi-field"
+                            onClick={() => { const arr = [...groups]; arr.splice(gi, 1); emitChange(arr); }}
+                            title={`Remove ${label}`}
+                            aria-label={`Remove ${label}`}
+                          >
+                            <span className="remove-icon" aria-hidden>−</span>
+                          </button>
+                        )}
+                        <button 
+                          className="minimize-btn" 
+                          onClick={() => toggleCollapse(gi)} 
+                          aria-expanded={!collapsedGroups[gi]}
+                          title={collapsedGroups[gi] ? 'Expand' : 'Collapse'}
+                        >
+                          {collapsedGroups[gi] ? '▾' : '▴'}
+                        </button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {!readOnly && groupMulti && (!maxMulti || groups.length < maxMulti) && (
+            <div style={{marginTop:8}}>
+              <button type="button" className="add-multi-field" onClick={addMulti}>+ {label}</button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Fallback to original group rendering
+    return (
+      <div className="group-fields-container">
+        {groups.map((grp, gi) => (
+          <div key={gi} className="group-instance">
+            <div className="group-children">
+              {children.map((ch) => {
+                const childErr = errs[gi] && errs[gi][ch.id] ? errs[gi][ch.id] : '';
+                return (
+                  <div key={ch.id} className="group-child-row">
+                    <label htmlFor={`${tabId}_${id}_${gi}_${ch.id}`}>{ch.label}{(ch.required || ch.mandatory) && <span className="required-asterisk">*</span>}</label>
+                    {((ch.type === 'tel') || (ch.type === 'phone')) ? (
+                      <input
+                        id={`${tabId}_${id}_${gi}_${ch.id}`}
+                        value={(grp && grp[ch.id]) || ''}
+                        onChange={(e) => handleGroupChildChange(ch.id, sanitizeTel(e.target.value, ch.max_length ?? field?.max_length ?? 15), gi)}
+                        className={`t24-input ${childErr ? 'error' : ''}`}
+                        disabled={readOnly}
+                        inputMode="tel"
+                        maxLength={ch.max_length ?? field?.max_length ?? 15}
+                      />
+                    ) : (
+                      <input
+                        id={`${tabId}_${id}_${gi}_${ch.id}`}
+                        value={(grp && grp[ch.id]) || ''}
+                        onChange={(e) => handleGroupChildChange(ch.id, e.target.value, gi)}
+                        className={`t24-input ${childErr ? 'error' : ''}`}
+                        disabled={readOnly}
+                      />
+                    )}
+                    {childErr && <div className="t24-error">{childErr}</div>}
+                  </div>
+                );
+              })}
+            </div>
+            {!readOnly && groupMulti && groups.length > 1 && (
+              <div className="group-actions">
+                <button
+                  type="button"
+                  className="remove-multi-field"
+                  title={`Remove ${label}`}
+                  aria-label={`Remove ${label}`}
+                  onClick={() => { const arr = [...groups]; arr.splice(gi, 1); emitChange(arr); }}
+                >
+                  <span className="remove-icon" aria-hidden>−</span>
+                  <span className="sr-only">Remove {label}</span>
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+        {!readOnly && groupMulti && (!maxMulti || groups.length < maxMulti) && (<button type="button" className="add-multi-field" onClick={addMulti}>+{label}</button>)}
+      </div>
+    );
+  };
+
   const singleError = Array.isArray(error) ? '' : error;
-  const arr = Array.isArray(value) ? value : [''];
-  const errs = Array.isArray(error) ? error : [];
+  const typeNorm = (type || '').toLowerCase();
 
   const renderSingle = () => {
-    if (type === 'dropdown') {
+    // Handle dropdown type with CustomDropdown component from 2nd code
+    if (typeNorm === 'dropdown' || (dropdown && dropdownOptions && dropdownOptions.length)) {
       return (
         <CustomDropdown
           options={dropdownOptions.length ? dropdownOptions : options}
@@ -139,63 +444,131 @@ const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', read
       );
     }
 
-    if (type === 'textarea') {
-      return <textarea value={value ?? ''} onChange={e => handleSingleChange(e.target.value)} disabled={readOnly} />;
+    if (typeNorm === 'select' || typeNorm === 'account' || (options && options.length)) {
+      const opts = dropdownOptions && dropdownOptions.length ? dropdownOptions : options;
+      return (
+        <select id={`${tabId}_${id}`} value={value ?? ''} onChange={(e) => handleSingleChange(e.target.value)} required={required} disabled={readOnly} className={`t24-input ${singleError ? 'error' : ''}`}>
+          <option value="">Select...</option>
+          {(opts || []).map((opt) => { const val = opt && typeof opt === 'object' ? (opt.value ?? opt.id ?? opt.key) : opt; const lbl = opt && typeof opt === 'object' ? (opt.label ?? opt.name ?? String(val)) : String(opt); return <option key={String(val)} value={val}>{lbl}</option>; })}
+        </select>
+      );
     }
 
-    if (type === 'file') {
-      return <input type="file" accept={accept} disabled={readOnly} onChange={e => handleSingleChange(e.target.files[0])} />;
+    if (typeNorm === 'textarea') {
+      const fieldElemId = `${tabId}_${id}`;
+      if (minimized) {
+        return (
+          <div className="field-minimized-row">
+            <div className="field-minimized-preview">{String(value ?? '').slice(0, 80) || 'Empty'}</div>
+            <button className="minimize-field-btn" onClick={() => setMinimized(false)} aria-label="Expand field">▴</button>
+          </div>
+        );
+      }
+
+      return (
+        <div style={{position:'relative', display:'flex', alignItems:'center'}}>
+          <textarea id={fieldElemId} className={`t24-input ${singleError ? 'error' : ''}`} value={value ?? ''} onChange={(e) => handleSingleChange(e.target.value)} disabled={readOnly} rows={4} />
+          <button className="minimize-field-btn" onClick={() => setMinimized(true)} aria-label="Minimize field">−</button>
+        </div>
+      );
     }
 
-    return (
-      <input
-        value={value ?? ''}
-        onChange={e => handleSingleChange(e.target.value)}
-        disabled={readOnly}
-        min={min}
-        max={max}
-        pattern={pattern}
-      />
-    );
+    if (['int', 'integer', 'number', 'double', 'amount', 'float'].includes(typeNorm)) {
+      const step = typeNorm === 'int' || typeNorm === 'integer' ? '1' : (typeNorm === 'amount' ? '0.01' : 'any');
+      return (<input id={`${tabId}_${id}`} type="number" value={value ?? ''} onChange={(e) => handleSingleChange(e.target.value === '' ? '' : e.target.value)} className={`t24-input ${singleError ? 'error' : ''}`} disabled={readOnly} step={step} />);
+    }
+
+    if (typeNorm === 'date') { return (<input id={`${tabId}_${id}`} type="date" value={value ?? ''} onChange={(e) => handleSingleChange(e.target.value)} className={`t24-input ${singleError ? 'error' : ''}`} disabled={readOnly} />); }
+
+    if (typeNorm === 'email') { return (<input id={`${tabId}_${id}`} type="email" value={value ?? ''} onChange={(e) => handleSingleChange(e.target.value)} className={`t24-input ${singleError ? 'error' : ''}`} disabled={readOnly} />); }
+    if (typeNorm === 'tel' || typeNorm === 'phone') { return (<input id={`${tabId}_${id}`} type="tel" value={value ?? ''} onChange={(e) => handleSingleChange(e.target.value)} className={`t24-input ${singleError ? 'error' : ''}`} disabled={readOnly} />); }
+
+    if (typeNorm === 'file') {
+      const maxSize = field?.max_file_size ?? field?.maxFileSize ?? undefined;
+      const handleFileInput = (e) => {
+        if (readOnly) return;
+        setFileError('');
+        const files = Array.from(e.target.files || []);
+        if (maxSize) {
+          const accepted = [];
+          const rejected = [];
+          files.forEach((f) => {
+            if (f.size > maxSize) rejected.push(f.name || f.path || 'file'); else accepted.push(f);
+          });
+          if (rejected.length) {
+            setFileError(`File(s) too large: ${rejected.join(', ')} (max ${Math.round(maxSize / 1024)} KB)`);
+          }
+          emitChange(multi ? accepted : (accepted[0] || null));
+        } else {
+          emitChange(multi ? files : (files[0] || null));
+        }
+      };
+      return (
+        <div>
+          <input id={`${tabId}_${id}`} type="file" multiple={multi} onChange={handleFileInput} className={`t24-input ${singleError || fileError ? 'error' : ''}`} disabled={readOnly} />
+          {fileError && <div className="t24-error">{fileError}</div>}
+        </div>
+      );
+    }
+
+    // Attachment type: show file input + list of attachments with remove support
+    if (typeNorm === 'attachment') {
+      const attachments = Array.isArray(value) ? value : (value ? [value] : []);
+      const handleFileChange = (e) => {
+        if (readOnly) return;
+        setFileError('');
+        const files = Array.from(e.target.files || []);
+        const maxSize = field?.max_file_size ?? field?.maxFileSize ?? undefined;
+        if (maxSize) {
+          const accepted = [];
+          const rejected = [];
+          files.forEach((f) => {
+            if (f.size > maxSize) rejected.push(f.name || 'file'); else accepted.push(f);
+          });
+          if (rejected.length) {
+            setFileError(`File(s) too large: ${rejected.join(', ')} (max ${Math.round(maxSize / 1024)} KB)`);
+          }
+          emitChange(multi ? accepted : (accepted[0] || null));
+        } else {
+          emitChange(multi ? files : (files[0] || null));
+        }
+      };
+      const removeAttachment = (idx) => {
+        if (readOnly) return;
+        const arr = Array.isArray(value) ? [...value] : [];
+        arr.splice(idx, 1);
+        emitChange(arr);
+      };
+      return (
+        <div>
+          <input id={`${tabId}_${id}`} type="file" multiple={multi} onChange={handleFileChange} className={`t24-input ${singleError || fileError ? 'error' : ''}`} disabled={readOnly} />
+          {fileError && <div className="t24-error">{fileError}</div>}
+          <div className="attachment-list">
+            {attachments.map((att, i) => {
+              const name = att && att.name ? att.name : String(att);
+              const url = att && att.url ? att.url : null;
+              return (
+                <div key={i} className="attachment-item">
+                  {url ? <a href={url} target="_blank" rel="noreferrer">{name}</a> : <span>{name}</span>}
+                  {!readOnly && (
+                    <button type="button" className="remove-attachment" onClick={() => removeAttachment(i)}>Remove</button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    return (<input id={`${tabId}_${id}`} value={value ?? ''} onChange={(e) => handleSingleChange(e.target.value)} className={`t24-input ${singleError ? 'error' : ''}`} disabled={readOnly} />);
   };
 
-  const renderMulti = () => (
-    <div>
-      {arr.map((v, i) => (
-        <div key={i}>
-          <input value={v ?? ''} onChange={e => handleMultiChange(e.target.value, i)} disabled={readOnly} />
-          {errs[i] && <div className="t24-error">{errs[i]}</div>}
-          {!readOnly && arr.length > 1 && <button onClick={() => removeMulti(i)}>✕</button>}
-        </div>
-      ))}
-      {!readOnly && (!maxMulti || arr.length < maxMulti) && <button onClick={addMulti}>+ Add {label}</button>}
-    </div>
-  );
-
-  const renderGroup = () => (
-    <div>
-      {(Array.isArray(value) ? value : [{}]).map((grp, gi) => (
-        <div key={gi}>
-          {children.map(ch => (
-            <input
-              key={ch.id}
-              value={grp[ch.id] ?? ''}
-              onChange={e => handleGroupChildChange(ch.id, e.target.value, gi)}
-              disabled={readOnly}
-            />
-          ))}
-        </div>
-      ))}
-      {!readOnly && <button onClick={addMulti}>+ Add {label}</button>}
-    </div>
-  );
-
-  /* ---------------- Render ---------------- */
   return (
     <div className="t24-form-field">
-      <label>{label}{required && '*'}</label>
-      <div>
-        {type === 'group' ? renderGroup() : (multi ? renderMulti() : renderSingle())}
+      <label htmlFor={`${tabId}_${id}`} className={`t24-label ${singleError ? 'error' : ''}`}>{label}{required && <span className="required-asterisk">*</span>}</label>
+      <div className="t24-input-container">
+        {typeNorm === 'group' ? renderGroup() : (multi ? renderMulti() : renderSingle())}
         {!multi && singleError && <div className="t24-error">{singleError}</div>}
       </div>
     </div>

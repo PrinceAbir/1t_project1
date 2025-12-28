@@ -18,13 +18,40 @@
 	background:#fff;
 	font-size:14px;
 }
+/* custom dropdown styles */
+.custom-dropdown{position:relative}
+.custom-dropdown-toggle{display:flex;justify-content:space-between;align-items:center}
+.custom-dropdown .caret{margin-left:8px;color:#65737e}
+.custom-dropdown-menu{position:absolute;z-index:20;left:0;right:0;background:#fff;border:1px solid #e6eef6;border-radius:6px;max-height:220px;overflow:auto;box-shadow:0 6px 18px rgba(11,59,97,0.08);margin-top:6px}
+.custom-dropdown-item{padding:8px 10px;cursor:pointer}
+.custom-dropdown-item{padding:8px 10px;cursor:pointer}
+.custom-dropdown-item .item-label{font-weight:600;color:#0b3b61}
+.custom-dropdown-item .item-detail{font-size:12px;color:#6b7280;margin-top:4px}
+.custom-dropdown-item.highlight,.custom-dropdown-item:hover{background:#f0f6ff}
+
+.custom-dropdown-toggle .item-label{font-weight:600}
+.custom-dropdown-toggle .item-detail{font-size:11px;color:#6b7280}
+
+/* dropdown table */
+.dropdown-table{width:100%;border-collapse:collapse}
+.dropdown-table th{background:#f7fbff;padding:8px;border-bottom:1px solid #e6eef6;font-weight:600;color:#0b3b61;font-size:12px;text-align:left}
+.dropdown-table td{padding:8px;border-bottom:1px solid #eef6ff;font-size:13px;color:#111}
+.dropdown-table tr.highlight td{background:#eef7ff}
+
+/* char counter for max length */
+.char-counter{position:absolute;right:8px;bottom:6px;font-size:12px;color:#8b9096}
+
+.minimize-field-btn{border:none;background:#fff;border-radius:50%;width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;margin-left:8px;cursor:pointer;border:1px solid #e6eef6;color:#0b3b61;font-weight:700}
+.minimize-field-btn:hover{background:#f3f8ff}
+.field-minimized-row{display:flex;align-items:center;gap:8px}
+.field-minimized-preview{color:#333;padding:8px 12px;background:#fbfdff;border:1px solid #eef6ff;border-radius:6px;flex:1}
 .t24-input.error{border-color:#d93025;box-shadow:0 0 0 3px rgba(217,48,37,0.06)}
 .t24-error{color:#d93025;font-size:12px;margin-top:6px}
 .multi-fields-container,.group-fields-container{display:flex;flex-direction:column;gap:8px}
 .multi-field-row,.group-child-row{display:flex;align-items:center;gap:8px}
-.add-multi-field{background:#0b5fff;color:#fff;border:none;padding:8px 10px;border-radius:4px;cursor:pointer;font-size:13px;margin-top:6px}
+.add-multi-field{background:#0b5fff;color:#fff;border:none;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;margin-top:12px}
 .add-multi-field:hover{background:#094ecc}
-.remove-multi-field{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:34px;padding:0;border-radius:50%;border:none;background:#fff;cursor:pointer;color:#d93025;font-weight:700;font-size:18px;border:1px solid rgba(217,48,37,0.12)}
+.remove-multi-field{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:34px;padding:0;border-radius:50%;border:none;background:#fff;cursor:pointer;color:#d93025;font-weight:700;font-size:16px;border:1px solid rgba(217,48,37,0.12);margin-left:8px}
 .remove-multi-field:hover{background:#fbeaea;box-shadow:0 2px 6px rgba(217,48,37,0.12)}
 .remove-multi-field .remove-icon{line-height:1}
 .remove-multi-field:focus{outline:2px solid rgba(11,59,97,0.12)}
@@ -38,6 +65,17 @@
 	background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
 	box-shadow:0 1px 0 rgba(11,59,97,0.02);
 }
+.group-instance.collapsed{opacity:0.9}
+.minimize-btn{border:none;background:transparent;padding:6px 8px;cursor:pointer;font-size:14px;color:#0b3b61}
+.group-minimized{font-size:13px}
+
+/* Table layout for group fields */
+.group-table{width:100%;border-collapse:collapse;background:transparent}
+.group-table th{background:#f7fbff;padding:10px;border:1px solid #e6eef6;text-align:left;color:#0b3b61}
+.group-table td{padding:8px;border:1px solid #eef6ff;vertical-align:middle}
+.group-table .row-actions{width:120px;text-align:center}
+.group-minimized-cell{padding:10px;color:#666}
+.group-instance-row.collapsed td{background:#fbfdff}
 .group-actions{margin-top:8px;display:flex;justify-content:flex-end}
 .group-fields-container{background:transparent;padding:6px;border-radius:6px}
 .multi-fields-container{background:transparent;padding:4px}

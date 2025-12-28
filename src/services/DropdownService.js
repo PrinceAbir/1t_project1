@@ -17,6 +17,37 @@ export const loadDropdownOptions = (field) => {
     if (foundKey) data = dummyData[foundKey];
   }
 
+  // If still not found, try a few heuristics: normalize underscores/casing, substring match,
+  // or common aliases (e.g., country -> nationality, account_officer -> accountOfficer)
+  if (!data) {
+    const normalize = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const target = normalize(sourceName);
+
+    // direct normalized match
+    const direct = Object.keys(dummyData).find(k => normalize(k) === target);
+    if (direct) data = dummyData[direct];
+  }
+
+  if (!data) {
+    const normalize = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const target = normalize(sourceName);
+    // try contains/substring match
+    const foundKey = Object.keys(dummyData).find(k => normalize(k).includes(target) || target.includes(normalize(k)));
+    if (foundKey) data = dummyData[foundKey];
+  }
+
+  if (!data) {
+    // common alias mappings
+    const aliasMap = {
+      country: 'nationality',
+      account_officer: 'accountOfficer',
+      other_officer_1: 'otherOfficer1',
+      customer_status: 'customerStatus'
+    };
+    const aliasTarget = aliasMap[sourceName] || aliasMap[sourceName.toLowerCase()];
+    if (aliasTarget && dummyData[aliasTarget]) data = dummyData[aliasTarget];
+  }
+
   if (!data) {
     console.debug(`DropdownService: no dummy data for source '${sourceName}'`);
     return [];
@@ -39,7 +70,12 @@ export const loadDropdownOptions = (field) => {
     else if (typeof item === 'string') label = item;
     else label = value;
 
-    return { value, label, raw: item };
+    // include a detail string showing all fields and their values for richer dropdown display
+    const detail = Object.entries(item)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(' · ');
+
+    return { value, label, raw: item, detail };
   });
   console.debug(`DropdownService: loaded ${mapped.length} options for '${sourceName}'`, mapped.slice(0, 20));
   return mapped;
