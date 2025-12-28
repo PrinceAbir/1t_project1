@@ -1,0 +1,50 @@
+.t24-form-field{
+	margin-bottom:14px;
+	font-family:Segoe UI,Arial,Helvetica,sans-serif;
+}
+.t24-label{
+	display:block;
+	font-weight:600;
+	margin-bottom:6px;
+	color:#0b3b61;
+}
+.required-asterisk{color:#d93025;margin-left:4px}
+.t24-input-container{display:flex;flex-direction:column}
+.t24-input{
+	width:100%;
+	padding:8px 10px;
+	border:1px solid #cfd8e3;
+	border-radius:4px;
+	background:#fff;
+	font-size:14px;
+}
+.t24-input.error{border-color:#d93025;box-shadow:0 0 0 3px rgba(217,48,37,0.06)}
+.t24-error{color:#d93025;font-size:12px;margin-top:6px}
+.multi-fields-container,.group-fields-container{display:flex;flex-direction:column;gap:8px}
+.multi-field-row,.group-child-row{display:flex;align-items:center;gap:8px}
+.add-multi-field{background:#0b5fff;color:#fff;border:none;padding:8px 10px;border-radius:4px;cursor:pointer;font-size:13px;margin-top:6px}
+.add-multi-field:hover{background:#094ecc}
+.remove-multi-field{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:34px;padding:0;border-radius:50%;border:none;background:#fff;cursor:pointer;color:#d93025;font-weight:700;font-size:18px;border:1px solid rgba(217,48,37,0.12)}
+.remove-multi-field:hover{background:#fbeaea;box-shadow:0 2px 6px rgba(217,48,37,0.12)}
+.remove-multi-field .remove-icon{line-height:1}
+.remove-multi-field:focus{outline:2px solid rgba(11,59,97,0.12)}
+.remove-attachment{background:#fff;border:1px solid #d1dde9;padding:6px 8px;border-radius:4px;cursor:pointer;font-size:13px}
+.attachment-list{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.attachment-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px;border:1px solid #eef3f9;border-radius:4px;background:#fff}
+.group-instance{
+	border:1px solid #e6edf5;
+	padding:6px 8px;
+	border-radius:6px;
+	background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
+	box-shadow:0 1px 0 rgba(11,59,97,0.02);
+}
+.group-actions{margin-top:8px;display:flex;justify-content:flex-end}
+.group-fields-container{background:transparent;padding:6px;border-radius:6px}
+.multi-fields-container{background:transparent;padding:4px}
+
+/* Layout fixes so labels don't wrap into two lines inside groups */
+.group-children{display:flex;flex-direction:column;gap:8px}
+.group-child-row{display:flex;align-items:center;gap:12px}
+.group-child-row label{flex:0 0 170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:#0b3b61}
+.group-child-row .t24-input{flex:1;min-width:0}
+.sr-only{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}

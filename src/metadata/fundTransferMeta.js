@@ -8,6 +8,7 @@ const fundTransferMeta = {
       "field_name": "transaction_type",
       "label": "Transaction Type",
       "type": "select",
+      "options": ["Internal Trans fer", "External Transfer", "International Transfer"],
       "multi": true,
       "mandatory": true,
       "max_multifield": 3
@@ -138,7 +139,7 @@ const fundTransferMeta = {
     "exchange_rate": {
       "field_name": "exchange_rate",
       "label": "Exchange Rate",
-      "type": "number",
+      "type": "int",
       "multi": false,
       "mandatory": false
     },
@@ -183,7 +184,8 @@ const fundTransferMeta = {
       "label": "SMS Notification",
       "type": "tel",
       "multi": true,
-      "mandatory": false
+      "mandatory": false,
+      "max_multifield": 2
     },
     "contact": {
       "field_name": "contact",
