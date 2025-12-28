@@ -11,9 +11,6 @@ import "../App.css";
 
 const T24TransactExplorer = ({ module, mode = 'create' }) => {
   const metadata = META_MAP[module];
-  if (!metadata) {
-    return <div>No metadata for module: {module}</div>;
-  }
 
   const [activeTab, setActiveTab] = useState("MAIN");
   const [formState, setFormState] = useState({});
@@ -43,6 +40,14 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
     index === null ? `${tab}_${fieldId}` : `${tab}_${fieldId}_${index}`;
 
   const t24FormData = useMemo(() => {
+    if (!metadata) {
+      return {
+        MAIN: { title: `No metadata for module: ${module}`, fields: [] },
+        AUDIT: { fields: [], title: "AUDIT" },
+        RESERVED: { fields: [], title: "RESERVED" }
+      };
+    }
+
     return {
       MAIN: {
         title: `${metadata.application.toUpperCase()} / ${metadata.type}`,
@@ -51,7 +56,7 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
       AUDIT: { fields: [], title: "AUDIT" },
       RESERVED: { fields: [], title: "RESERVED" }
     };
-  }, [metadata]);
+  }, [metadata, module]);
 
   // columns: number of columns to display form fields in (1,2,3)
   const [columns, setColumns] = useState(() => {
@@ -90,7 +95,7 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
       const c = Number(metadata.columns) || 1;
       if (c > 0 && c !== columns) setColumns(c);
     }
-  }, [metadata]);
+  }, [metadata, columns]);
 
   const handleFieldChange = useCallback((fieldName, value) => {
     setFormState((p) => ({
@@ -179,14 +184,6 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
     return false;
   }, [activeTab, formState, t24FormData, triggerToast, isViewMode]);
 
-  const handleDelete = () => {
-    if (isViewMode) return; // No delete in view
-    if (window.confirm("Delete transaction?")) {
-      setFormState((p) => ({ ...p, [activeTab]: {} }));
-      triggerToast("Transaction deleted");
-    }
-  };
-
   const handleCommit = () => {
     if (isViewMode) return;
     if (handleValidate()) {
@@ -198,13 +195,12 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
       triggerToast("Committed successfully");
     }
   };
-
-  const handleAuthorize = () => handleValidate() && triggerToast("Authorized");
-  const handleCopy = () => triggerToast("Copied");
   const handleHold = () => triggerToast("Held");
   const handleBack = () => handleBackToHome();
 
   if (isLoading) return <div className="loading">Loading...</div>;
+
+  if (!metadata) return <div>No metadata for module: {module}</div>;
 
   const currentTab = t24FormData[activeTab];
   const currentData = formState[activeTab] || {};

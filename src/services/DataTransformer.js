@@ -79,8 +79,6 @@ class DataTransformer {
       required: field.mandatory || false,
       label: field.label,
       type: this.mapFieldType(field.type, field),
-      value: field.multivalued ? [""] : "",
-      multi: field.multivalued || field.multi || false,
       value,
       multi: isMulti,
       metadata: {

@@ -1,4 +1,4 @@
-export default [
+const ftrecorddata = [
   {
     
     application: "payment",
@@ -142,4 +142,6 @@ export default [
     }
   }
 ];
+
+export default ftrecorddata;
 

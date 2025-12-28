@@ -1,5 +1,5 @@
 // src/components/MainApp.js (updated: handle edge cases like invalid module, no record, useParams for module, better localStorage handling, memoized recentRecords)
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom"; // Added useParams and useNavigate for routing
 import T24TransactExplorer from "./T24TransactExplorer";
 import T24RecordViewer from "./T24RecordViewer";
@@ -153,9 +153,6 @@ const MainApp = () => {
   const handleSettings = () => {
     setShowSettings(!showSettings);
   };
-  const handleBackToHome = () => {
-    navigate("/");
-  };
 
   const getModuleName = () => {
     const modules = {
@@ -168,16 +165,7 @@ const MainApp = () => {
     return modules[currentModule] || "Application";
   };
 
-  const getModuleIcon = () => {
-    const icons = {
-      customer: "👤",
-      funds: "💸",
-      account: "🏦",
-      deposit: "💰",
-      lending: "📈",
-    };
-    return icons[currentModule] || "📋";
-  };
+  
 
   const getPlaceholder = () => {
     const placeholders = {

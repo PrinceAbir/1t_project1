@@ -13,7 +13,6 @@ const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', read
   const multi = field?.multi ?? field?.metadata?.multi ?? field?.multivalued ?? false;
   const min = field?.min ?? field?.metadata?.min;
   const max = field?.max ?? field?.metadata?.max;
-  const decimals = field?.decimals ?? field?.metadata?.decimals;
   const accept = field?.accept ?? field?.metadata?.accept;
   const pattern = field?.pattern ?? field?.metadata?.pattern;
   const maxMulti = field?.max_multifield ?? field?.metadata?.max_multifield;
@@ -26,17 +25,19 @@ const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', read
   /* ---------------- Dropdown options ---------------- */
   const [dropdownOptions, setDropdownOptions] = useState([]);
 
+  const { dropdown, dropdownType, dropdownName } = field || {};
+
   useEffect(() => {
     if (type === 'dropdown') {
-      if (field.dropdownType === 'dynamic' && field.dropdownName) {
-        loadDynamicOptions(field.dropdownName);
-      } else if (field.dropdown) {
+      if (dropdownType === 'dynamic' && dropdownName) {
+        loadDynamicOptions(dropdownName);
+      } else if (dropdown) {
         setDropdownOptions(loadDropdownOptions(field) || []);
       } else {
         setDropdownOptions(options || []);
       }
     }
-  }, [type, field.dropdown, field.dropdownType, field.dropdownName, options]);
+  }, [type, dropdown, dropdownType, dropdownName, options, field]);
 
   const loadDynamicOptions = (source) => {
     const dynamicData = {

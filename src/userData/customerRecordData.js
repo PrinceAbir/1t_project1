@@ -1,4 +1,4 @@
-export default [
+const customerRecordData = [
   {
     
     application: "customer",
@@ -111,3 +111,5 @@ export default [
     }
   }
 ];
+
+export default customerRecordData;
