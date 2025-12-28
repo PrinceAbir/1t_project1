@@ -1,7 +1,8 @@
+// src/services/DataTransformer.js (updated: handle edge cases like empty fields, better type mapping)
 class DataTransformer {
   // Convert metadata to T24 field array for UI
   static metadataToT24Fields(metadata) {
-    if (!metadata?.fields) return [];
+    if (!metadata?.fields) return []; // Edge: no fields
 
     if (Array.isArray(metadata.fields)) {
       return metadata.fields.map((field) => this.transformField(field));
@@ -20,6 +21,51 @@ class DataTransformer {
   }
 
   static transformField(field) {
+    // handle group-type fields (nested children) specially
+    const isGroup = field.type === 'group' || field.group === true || Array.isArray(field.fields);
+
+    if (isGroup) {
+      const childrenSource = field.fields || field.children || [];
+      const children = childrenSource.map((ch) => ({
+        id: ch.field_name || ch.name,
+        name: ch.field_name || ch.name,
+        label: ch.label,
+        type: this.mapFieldType(ch.type, ch),
+        metadata: {
+          required: ch.mandatory || false,
+          min: ch.min_length,
+          max: ch.max_length,
+          options: ch.options || [],
+        },
+        ...ch,
+      }));
+
+      // default value for a single group entry
+      const defaultEntry = children.reduce((acc, c) => ({ ...acc, [c.id]: '' }), {});
+
+      return {
+        id: field.name,
+        label: field.label,
+        name: field.name,
+        type: 'group',
+        multi: field.multivalued || field.multi || false,
+        value: field.multivalued ? [defaultEntry] : defaultEntry,
+        metadata: {
+          required: field.mandatory || false,
+          multi: field.multivalued || false,
+          min: field.min_length,
+          max: field.max_length,
+          options: field.options || [],
+          max_multifield: field.max_multifield,
+          children,
+          fieldType: 'GROUP',
+          t24Field: field.t24_field || field.name.toUpperCase().replace(/_/g, "."),
+        },
+        children,
+        ...field,
+      };
+    }
+
     const isMulti = !!(field.multivalued || field.multi);
     const fieldId = field.id || field.field_name || field.name;
     const value = isMulti ? (field.value || [""]) : (field.value ?? "");
@@ -33,6 +79,8 @@ class DataTransformer {
       required: field.mandatory || false,
       label: field.label,
       type: this.mapFieldType(field.type, field),
+      value: field.multivalued ? [""] : "",
+      multi: field.multivalued || field.multi || false,
       value,
       multi: isMulti,
       metadata: {
@@ -63,7 +111,7 @@ class DataTransformer {
     if (type === "string") return "text";
     if (type === "int") return "number";
     
-    return "text";
+    return "text"; // Default edge case
   }
 
   static getFieldType(field) {
@@ -89,7 +137,7 @@ class DataTransformer {
 
     const fieldsArray = Array.isArray(metadata.fields)
       ? metadata.fields
-      : Object.keys(metadata.fields).map((key) => ({
+      : Object.keys(metadata.fields || {}).map((key) => ({ // Edge: empty fields
           ...metadata.fields[key],
           id: metadata.fields[key].field_name,
         }));

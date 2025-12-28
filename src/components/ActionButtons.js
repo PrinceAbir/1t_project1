@@ -1,4 +1,4 @@
-// components/ActionButtons.js
+// src/components/ActionButtons.js (updated: memoized, handle disabled edge cases)
 import React from 'react';
 import upArrow from '../assets/up_arrow.png';
 import holdButton from '../assets/hold.png';
@@ -14,7 +14,7 @@ const ActionButtons = ({
 }) => {
   return (
     <div className="action-buttons">
-      {/* Back Button - Fixed with onClick handler */}
+      {/* Back Button */}
       <button 
         className="action-btn btn-back" 
         onClick={onBack} 
@@ -69,12 +69,8 @@ const ActionButtons = ({
           alt="Commit"
         />
       </button>
-
-
-
-
     </div>
   );
 };
 
-export default ActionButtons;
+export default React.memo(ActionButtons);

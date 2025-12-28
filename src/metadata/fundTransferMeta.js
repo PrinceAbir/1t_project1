@@ -1,5 +1,5 @@
-
-const formData = {
+// src/metadata/fundTransferMeta.js
+const fundTransferMeta = {
   "application": "payment",
   "type": "core",
   "columns": 1,
@@ -32,7 +32,7 @@ const formData = {
       "type": "select",
       "multi": false,
       "mandatory": true,
-      "oppotions": [123, 456]
+      "options": [123, 456] // Fixed typo from "oppotions"
     },
     "credit_currency": {
       "field_name": "credit_currency",
@@ -185,6 +185,28 @@ const formData = {
       "multi": true,
       "mandatory": false
     },
+    "contact": {
+      "field_name": "contact",
+      "label": "Contact",
+      "type": "group",
+      "multivalued": true,
+      "mandatory": false,
+      "max_multifield": 3,
+      "fields": [
+        {
+          "field_name": "phone",
+          "label": "Phone Number",
+          "type": "tel",
+          "mandatory": true
+        },
+        {
+          "field_name": "email",
+          "label": "Email",
+          "type": "email",
+          "mandatory": false
+        }
+      ]
+    },
     "address": {
       "field_name": "address",
       "label": "Address",
@@ -215,6 +237,6 @@ const formData = {
       "mandatory": true
     }
   }
-}
+};
 
-export default formData;
+export default fundTransferMeta;

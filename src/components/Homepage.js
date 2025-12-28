@@ -1,29 +1,26 @@
-// HomePage.js - UPDATED
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // ADD THIS
+// src/components/HomePage.js (updated: use navigate with path param /mainapp/:module, memoized)
+import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Homepage.css';
 
 const HomePage = () => {
-  const navigate = useNavigate(); // ADD THIS HOOK
-  const [selectedModule, setSelectedModule] = useState(null);
+  const navigate = useNavigate();
 
-  // Available modules/applications
-  const MODULES = [
+  // Available modules/applications (memoized)
+  const MODULES = useMemo(() => [
     { id: 'customer', title: 'Customer', desc: 'Manage customers, profiles and KYC.', icon: '👤', color: '#667eea' },
     { id: 'funds', title: 'Fund Transfer', desc: 'Create and manage transfers.', icon: '💸', color: '#48bb78' },
     { id: 'account', title: 'Account', desc: 'Account opening and maintenance.', icon: '🏦', color: '#ed8936' },
     { id: 'deposit', title: 'Deposit', desc: 'Create deposit products and placements.', icon: '💰', color: '#9f7aea' },
     { id: 'lending', title: 'Lending', desc: 'Loan origination and servicing.', icon: '📈', color: '#4299e1' }
-  ];
+  ], []);
 
   const handleModuleClick = (module) => {
-    // Navigate to MainApp with module as parameter
-    navigate(`/mainapp?module=${module.id}`, { 
+    // Navigate to MainApp with module as path param
+    navigate(`/mainapp/${module.id}`, { 
       state: { module: module } // Optional: pass module data via state
     });
   };
-
-  // ... rest of your HomePage code remains the same ...
 
   return (
     <div className="homepage">
@@ -128,4 +125,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;
+export default React.memo(HomePage);
