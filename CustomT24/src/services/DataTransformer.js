@@ -20,28 +20,37 @@ class DataTransformer {
   }
 
   static transformField(field) {
+    const isMulti = !!(field.multivalued || field.multi);
+    const fieldId = field.id || field.field_name || field.name;
+    const value = isMulti ? (field.value || [""]) : (field.value ?? "");
+
     return {
-      id: field.name,
+      // preserve original raw data first
+      ...field,
+      // normalized properties (override spread if present)
+      id: fieldId,
+      name: fieldId,
+      required: field.mandatory || false,
       label: field.label,
-      name: field.name,
       type: this.mapFieldType(field.type, field),
-      value: field.multivalued ? [""] : "",
+      value,
+      multi: isMulti,
       metadata: {
         required: field.mandatory || false,
-        multi: field.multivalued || false,
+        multi: isMulti,
         min: field.min_length,
         max: field.max_length,
         options: field.options || [],
         max_multifield: field.max_multifield,
         fieldType: this.getFieldType(field),
         t24Field:
-          field.t24_field || field.name.toUpperCase().replace(/_/g, "."),
+          field.t24_field || (fieldId ? fieldId.toUpperCase().replace(/_/g, ".") : undefined),
       },
-      ...field,
     };
   }
 
   static mapFieldType(type, field) {
+    if (type === "dropdown") return "dropdown";
     if (type === "select" || field.options?.length > 0) return "select";
     if (type === "file") return "file";
     if (type === "date") return "date";
@@ -58,7 +67,7 @@ class DataTransformer {
   }
 
   static getFieldType(field) {
-    if (field.options?.length > 0 || field.type === "account")
+    if (field.options?.length > 0 || field.type === "account" || field.type === "dropdown")
       return "DROPDOWN";
     if (field.type === "amount" || field.type === "number") return "NUMBER";
     if (field.type === "email") return "EMAIL";
