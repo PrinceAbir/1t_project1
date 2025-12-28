@@ -222,7 +222,8 @@ const fundTransferMeta = {
       "label": "Attachment",
       "type": "file",
       "multi": false,
-      "mandatory": false
+      "mandatory": false,
+      "max_file_size": 5242880
     },
     "priority": {
       "field_name": "priority",
