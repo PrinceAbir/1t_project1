@@ -12,6 +12,8 @@ const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', read
   const options = useMemo(() => (field?.options || field?.metadata?.options || []), [field?.options, field?.metadata?.options]);
   const maxMulti = field?.max_multifield ?? field?.metadata?.max_multifield;
 
+  const groupMulti = field?.multivalued ?? field?.multi ?? field?.metadata?.multivalued ?? false;
+
   const [dropdownOptions, setDropdownOptions] = useState(options || []);
   const [fileError, setFileError] = useState('');
 
@@ -49,7 +51,18 @@ const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', read
 
   const removeMulti = (idx) => { if (readOnly) return; const arr = Array.isArray(value) ? [...value] : []; if (arr.length <= 1) return; arr.splice(idx, 1); emitChange(arr); };
 
-  const addMulti = () => { if (readOnly) return; const arr = Array.isArray(value) ? [...value] : []; if (maxMulti && arr.length >= maxMulti) return; if (type === 'group') { const empty = children.reduce((acc, c) => ({ ...acc, [c.id]: '' }), {}); emitChange([...arr, empty]); } else { emitChange([...arr, '']); } };
+  const addMulti = () => {
+    if (readOnly) return;
+    const arr = Array.isArray(value) ? [...value] : [];
+    if (maxMulti && arr.length >= maxMulti) return;
+    if (type === 'group') {
+      if (!groupMulti) return;
+      const empty = children.reduce((acc, c) => ({ ...acc, [c.id]: '' }), {});
+      emitChange([...arr, empty]);
+    } else {
+      emitChange([...arr, '']);
+    }
+  };
 
   const handleGroupChildChange = (childId, childVal, groupIdx) => { if (readOnly) return; const groups = Array.isArray(value) ? [...value] : [value || {}]; groups[groupIdx] = { ...(groups[groupIdx] || {}), [childId]: childVal }; emitChange(groups); };
 
@@ -133,7 +146,7 @@ const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', read
                 );
               })}
             </div>
-            {!readOnly && groups.length > 1 && (
+            {!readOnly && groupMulti && groups.length > 1 && (
               <div className="group-actions">
                 <button
                   type="button"
@@ -149,7 +162,7 @@ const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', read
             )}
           </div>
         ))}
-        {!readOnly && (!maxMulti || groups.length < maxMulti) && (<button type="button" className="add-multi-field" onClick={addMulti}>+ Add {label}</button>)}
+        {!readOnly && groupMulti && (!maxMulti || groups.length < maxMulti) && (<button type="button" className="add-multi-field" onClick={addMulti}>+{label}</button>)}
       </div>
     );
   };
