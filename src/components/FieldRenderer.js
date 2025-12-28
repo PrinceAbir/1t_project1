@@ -1,248 +1,168 @@
 // src/components/FieldRenderer.jsx (updated: added readOnly prop handling based on mode, dynamic options edge, memoized)
 import React, { useState, useEffect, memo } from 'react';
 
-const FieldRenderer = memo(({ field, value, onChange, error, tabId, readOnly = false }) => {
-  const {
-    id,
-    label,
-    type,
-    required,
-    multi,
-    options,
-    min,
-    max,
-    max_multifield,
-    decimals,
-    accept,
-    pattern
-    
-  } = field;
+const FieldRenderer = ({ field, value, onChange, error, tabId, readOnly = false }) => {
+  const id = field?.id;
+  const label = field?.label || '';
+  const type = field?.type || 'text';
+  const required = field?.required ?? field?.metadata?.required ?? field?.mandatory ?? false;
+  const multi = field?.multi ?? field?.metadata?.multi ?? false;
+  const options = field?.options || field?.metadata?.options || [];
+  const maxMulti = field?.max_multifield ?? field?.metadata?.max_multifield;
 
-  const [dropdownOptions, setDropdownOptions] = useState(options || []);
+  const [dropdownOptions, setDropdownOptions] = useState(options);
 
   useEffect(() => {
-    if (field.dropdown && field.dropdownType === 'dynamic' && field.dropdownName) {
-      loadDynamicOptions(field.dropdownName);
+    if (field?.dropdown && field?.dropdownType === 'dynamic') {
+      setDropdownOptions((o) => o);
     }
-  }, [field.dropdown, field.dropdownType, field.dropdownName]);
+  }, [field?.dropdown, field?.dropdownType]);
 
-  const loadDynamicOptions = (source) => {
-    const dynamicData = {
-      'ACCOUNT': ['Checking', 'Savings', 'Business', 'Money Market'],
-      'CURRENCY': ['USD', 'EUR', 'GBP', 'JPY', 'CAD'],
-      'COUNTRY': ['United States', 'United Kingdom', 'Canada', 'Australia'],
-      'DEPARTMENT': ['HR', 'Finance', 'IT', 'Marketing', 'Operations'],
-      'STATUS': ['Active', 'Inactive', 'Pending', 'Closed']
-    };
-    setDropdownOptions(dynamicData[source] || []); // Edge: empty if no source
+  const emitChange = (newVal) => onChange && onChange(id, newVal);
+
+  const handleSingleChange = (val) => {
+    if (readOnly) return;
+    emitChange(val);
   };
 
-  const getInputProps = () => {
-    switch (type) {
-      case 'int':
-        return {
-          type: 'text',
-          inputMode: 'numeric',
-          pattern: '[0-9]*',
-          title: 'Enter integers only',
-          min,
-          max,
-          required,
-          readOnly
-        };
-
-      case 'amount':
-        return {
-          type: 'number',
-          step: decimals ? Math.pow(10, -decimals) : 0.01,
-          min: min ?? 0,
-          max,
-          placeholder: '0.00',
-          required,
-          readOnly
-        };
-
-      case 'tel':
-        return {
-          type: 'tel',
-          pattern: pattern || '01[3-9][0-9]{8}',
-          title: 'Enter a valid 11-digit Bangladeshi mobile number',
-          maxLength: 11,
-          inputMode: 'numeric',
-          placeholder: '01**********',
-          required,
-          readOnly
-        };
-
-      case 'email':
-        return {
-          type: 'email',
-          placeholder: `Enter ${label.toLowerCase()}`,
-          required,
-          readOnly
-        };
-
-      case 'date':
-        return { type: 'date', required, readOnly };
-
-      case 'file':
-        return { type: 'file', accept, required, readOnly };
-
-      case 'textarea':
-        return { as: 'textarea', maxLength: max, placeholder: `Enter ${label.toLowerCase()}`, required, readOnly };
-
-      default:
-        return { type: 'text', minLength: min, maxLength: max, pattern, placeholder: `Enter ${label.toLowerCase()}`, required, readOnly };
-    }
+  const handleMultiChange = (val, idx = null) => {
+    if (readOnly) return;
+    const arr = Array.isArray(value) ? [...value] : [];
+    if (idx === null) arr.push(val); else arr[idx] = val;
+    emitChange(arr);
   };
 
-  const handleChange = (newValue, index = null) => {
-    if (readOnly) return; // Edge: no change if readOnly
-    if (multi) {
-      const currentValues = Array.isArray(value) ? [...value] : [''];
-      if (index !== null) {
-        currentValues[index] = newValue;
-      } else {
-        currentValues.push(newValue);
-      }
-      onChange(id, currentValues);
+  const removeMulti = (idx) => {
+    if (readOnly) return;
+    const arr = Array.isArray(value) ? [...value] : [];
+    if (arr.length <= 1) return;
+    arr.splice(idx, 1);
+    emitChange(arr);
+  };
+
+  const addMulti = () => {
+    if (readOnly) return;
+    const arr = Array.isArray(value) ? [...value] : [];
+    if (maxMulti && arr.length >= maxMulti) return;
+    if (type === 'group') {
+      const children = field.children || field.metadata?.children || [];
+      const empty = children.reduce((acc, c) => ({ ...acc, [c.id]: '' }), {});
+      emitChange([...arr, empty]);
     } else {
-      onChange(id, newValue);
+      emitChange([...arr, '']);
     }
   };
 
-  const addMultiField = () => {
+  const handleGroupChildChange = (childId, childVal, groupIdx) => {
     if (readOnly) return;
-    const currentValues = Array.isArray(value) ? [...value] : [''];
-    if (!max_multifield || currentValues.length < max_multifield) {
-      handleChange('', currentValues.length);
-    }
+    const groups = Array.isArray(value) ? [...value] : [value || {}];
+    groups[groupIdx] = { ...(groups[groupIdx] || {}), [childId]: childVal };
+    emitChange(groups);
   };
 
-  const removeMultiField = (index) => {
-    if (readOnly) return;
-    const currentValues = Array.isArray(value) ? [...value] : [''];
-    if (currentValues.length > 1) {
-      const newValues = currentValues.filter((_, i) => i !== index);
-      onChange(id, newValues);
-    }
-  };
-
-  const inputProps = getInputProps();
-
-  const renderMultiFields = () => {
-    const values = Array.isArray(value) ? value : [''];
-    // error may be string '' or array of messages
-    const errArray = Array.isArray(error) ? error : [];
-
+  const renderMulti = () => {
+    const arr = Array.isArray(value) ? value : [''];
+    const errs = Array.isArray(error) ? error : [];
     return (
       <div className="multi-fields-container">
-        {values.map((val, idx) => {
-          const perError = errArray[idx] || '';
-          return (
-            <div key={idx} className="multi-field-row">
-              {field.options || type === 'account' ? (
-                <div style={{ width: '100%' }}>
-                  <select
-                    id={`${tabId}_${id}_${idx}`}
-                    value={val || ''}
-                    onChange={(e) => handleChange(e.target.value, idx)}
-                    required={required && idx === 0}
-                    disabled={readOnly}
-                    className={`t24-input ${perError ? 'error' : ''}`}
-                  >
-                    <option value="">Select...</option>
-                    {(dropdownOptions.length ? dropdownOptions : options || []).map(opt => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                  {perError && <div className="t24-error">{perError}</div>}
-                </div>
-              ) : inputProps.as === 'textarea' ? (
-                <div style={{ width: '100%' }}>
-                  <textarea
-                    id={`${tabId}_${id}_${idx}`}
-                    value={val || ''}
-                    onChange={(e) => handleChange(e.target.value, idx)}
-                    {...inputProps}
-                    className={`t24-input ${perError ? 'error' : ''}`}
-                  />
-                  {perError && <div className="t24-error">{perError}</div>}
-                </div>
-              ) : (
-                <div style={{ width: '100%' }}>
-                  <input
-                    id={`${tabId}_${id}_${idx}`}
-                    value={val || ''}
-                    onChange={(e) => handleChange(e.target.value, idx)}
-                    {...inputProps}
-                    className={`t24-input ${perError ? 'error' : ''}`}
-                  />
-                  {perError && <div className="t24-error">{perError}</div>}
-                </div>
-              )}
-
-              {values.length > 1 && !readOnly && (
-                <button type="button" className="remove-multi-field" onClick={() => removeMultiField(idx)}>✕</button>
-              )}
-            </div>
-          );
-        })}
-        {(!max_multifield || values.length < max_multifield) && !readOnly && (
-          <button type="button" className="add-multi-field" onClick={addMultiField}>
-            + Add {label}
-          </button>
+        {arr.map((v, i) => (
+          <div key={i} className="multi-field-row">
+            <input
+              id={`${tabId}_${id}_${i}`}
+              value={v ?? ''}
+              onChange={(e) => handleMultiChange(e.target.value, i)}
+              className={`t24-input ${errs[i] ? 'error' : ''}`}
+              disabled={readOnly}
+            />
+            {errs[i] && <div className="t24-error">{errs[i]}</div>}
+            {!readOnly && arr.length > 1 && (
+              <button type="button" className="remove-multi-field" onClick={() => removeMulti(i)}>✕</button>
+            )}
+          </div>
+        ))}
+        {!readOnly && (!maxMulti || arr.length < maxMulti) && (
+          <button type="button" className="add-multi-field" onClick={addMulti}>+ Add {label}</button>
         )}
       </div>
     );
   };
 
-  const singleError = !Array.isArray(error) ? error : '';
+  const renderGroup = () => {
+    const groups = Array.isArray(value) ? value : [value || {}];
+    const errs = Array.isArray(error) ? error : [];
+    const children = field.children || field.metadata?.children || [];
+    return (
+      <div className="group-fields-container">
+        {groups.map((grp, gi) => (
+          <div key={gi} className="group-instance">
+            <div className="group-children">
+              {children.map((ch) => {
+                const childErr = errs[gi] && errs[gi][ch.id] ? errs[gi][ch.id] : '';
+                return (
+                  <div key={ch.id} className="group-child-row">
+                    <label htmlFor={`${tabId}_${id}_${gi}_${ch.id}`}>{ch.label}{(ch.required || ch.mandatory) && <span className="required-asterisk">*</span>}</label>
+                    <input
+                      id={`${tabId}_${id}_${gi}_${ch.id}`}
+                      value={(grp && grp[ch.id]) || ''}
+                      onChange={(e) => handleGroupChildChange(ch.id, e.target.value, gi)}
+                      className={`t24-input ${childErr ? 'error' : ''}`}
+                      disabled={readOnly}
+                    />
+                    {childErr && <div className="t24-error">{childErr}</div>}
+                  </div>
+                );
+              })}
+            </div>
+            {!readOnly && groups.length > 1 && (
+              <div className="group-actions"><button type="button" className="remove-multi-field" onClick={() => {
+                const arr = [...groups]; arr.splice(gi, 1); emitChange(arr);
+              }}>Remove</button></div>
+            )}
+          </div>
+        ))}
+        {!readOnly && (!maxMulti || groups.length < maxMulti) && (
+          <button type="button" className="add-multi-field" onClick={addMulti}>+ Add {label}</button>
+        )}
+      </div>
+    );
+  };
+
+  const singleError = Array.isArray(error) ? '' : error;
 
   return (
-    <div className={`t24-form-field`}>
+    <div className="t24-form-field">
       <label htmlFor={`${tabId}_${id}`} className={`t24-label ${singleError ? 'error' : ''}`}>
         {label}{required && <span className="required-asterisk">*</span>}
       </label>
-
       <div className="t24-input-container">
-        {multi ? renderMultiFields() : (
-          field.options || type === 'account' ? (
+        {type === 'group' ? renderGroup() : (multi ? renderMulti() : (
+          (field.options || type === 'account') ? (
             <select
               id={`${tabId}_${id}`}
-              value={value || ''}
-              onChange={(e) => handleChange(e.target.value)}
+              value={value ?? ''}
+              onChange={(e) => handleSingleChange(e.target.value)}
               required={required}
               disabled={readOnly}
-              className={`t24-input ${singleError ? 'error' : ''}`}
-            >
+              className={`t24-input ${singleError ? 'error' : ''}`}>
               <option value="">Select...</option>
-              {(dropdownOptions.length ? dropdownOptions : options || []).map(opt => (
+              {(dropdownOptions || options || []).map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
-          ) : inputProps.as === 'textarea' ? (
-            <textarea
-              id={`${tabId}_${id}`}
-              value={value || ''}
-              onChange={(e) => handleChange(e.target.value)}
-              {...inputProps}
-              className={`t24-input ${singleError ? 'error' : ''}`}
-            />
           ) : (
             <input
               id={`${tabId}_${id}`}
-              value={value || ''}
-              onChange={(e) => handleChange(e.target.value)}
-              {...inputProps}
+              value={value ?? ''}
+              onChange={(e) => handleSingleChange(e.target.value)}
               className={`t24-input ${singleError ? 'error' : ''}`}
+              disabled={readOnly}
             />
           )
-        )}
+        ))}
         {!multi && singleError && <div className="t24-error">{singleError}</div>}
       </div>
     </div>
   );
-});
+};
 
-export default FieldRenderer;
+export default memo(FieldRenderer);

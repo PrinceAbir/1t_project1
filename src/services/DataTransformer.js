@@ -21,12 +21,58 @@ class DataTransformer {
   }
 
   static transformField(field) {
+    // handle group-type fields (nested children) specially
+    const isGroup = field.type === 'group' || field.group === true || Array.isArray(field.fields);
+
+    if (isGroup) {
+      const childrenSource = field.fields || field.children || [];
+      const children = childrenSource.map((ch) => ({
+        id: ch.field_name || ch.name,
+        name: ch.field_name || ch.name,
+        label: ch.label,
+        type: this.mapFieldType(ch.type, ch),
+        metadata: {
+          required: ch.mandatory || false,
+          min: ch.min_length,
+          max: ch.max_length,
+          options: ch.options || [],
+        },
+        ...ch,
+      }));
+
+      // default value for a single group entry
+      const defaultEntry = children.reduce((acc, c) => ({ ...acc, [c.id]: '' }), {});
+
+      return {
+        id: field.name,
+        label: field.label,
+        name: field.name,
+        type: 'group',
+        multi: field.multivalued || field.multi || false,
+        value: field.multivalued ? [defaultEntry] : defaultEntry,
+        metadata: {
+          required: field.mandatory || false,
+          multi: field.multivalued || false,
+          min: field.min_length,
+          max: field.max_length,
+          options: field.options || [],
+          max_multifield: field.max_multifield,
+          children,
+          fieldType: 'GROUP',
+          t24Field: field.t24_field || field.name.toUpperCase().replace(/_/g, "."),
+        },
+        children,
+        ...field,
+      };
+    }
+
     return {
       id: field.name,
       label: field.label,
       name: field.name,
       type: this.mapFieldType(field.type, field),
       value: field.multivalued ? [""] : "",
+      multi: field.multivalued || field.multi || false,
       metadata: {
         required: field.mandatory || false,
         multi: field.multivalued || false,

@@ -185,6 +185,28 @@ const fundTransferMeta = {
       "multi": true,
       "mandatory": false
     },
+    "contact": {
+      "field_name": "contact",
+      "label": "Contact",
+      "type": "group",
+      "multivalued": true,
+      "mandatory": false,
+      "max_multifield": 3,
+      "fields": [
+        {
+          "field_name": "phone",
+          "label": "Phone Number",
+          "type": "tel",
+          "mandatory": true
+        },
+        {
+          "field_name": "email",
+          "label": "Email",
+          "type": "email",
+          "mandatory": false
+        }
+      ]
+    },
     "address": {
       "field_name": "address",
       "label": "Address",

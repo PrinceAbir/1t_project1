@@ -5,13 +5,72 @@ class ValidationService {
     const normalizedField = Object.assign({}, field, {
       required: field.required ?? field.mandatory,
       multivalued: field.multivalued ?? field.multi,
+      children: field.children ?? field.metadata?.children ?? field.children,
     });
 
     const isMulti = !!normalizedField.multivalued;
+    // support group fields
+    const isGroup = normalizedField.type === 'group' || normalizedField.group === true;
+    if (isGroup) {
+      return this.validateGroupField(normalizedField, value);
+    }
+
     if (isMulti) {
       return this.validateMultiField(normalizedField, value);
     }
+
     return this.validateSingleField(normalizedField, value);
+  }
+
+  static validateGroupField(field, values) {
+    const { label, children } = field;
+    const required = field.required ?? field.mandatory;
+    const max_multifield = field.max_multifield ?? field.maxMultifield;
+    const vals = Array.isArray(values) ? values : [];
+
+    if (vals.length === 0) {
+      if (required) {
+        return [{ _group: `${label} requires at least one entry` }];
+      }
+      return [];
+    }
+
+    const errors = new Array(vals.length).fill(null).map(() => ({}));
+
+    // If required and all entries empty => error on each entry
+    const allEmpty = vals.length > 0 && vals.every(v => !v || Object.values(v).every(x => x === undefined || x === null || x.toString().trim() === ''));
+    if (required && allEmpty) {
+      for (let i = 0; i < vals.length; i++) {
+        errors[i]._group = `Entry ${i + 1}: ${label} is required`;
+      }
+    }
+
+    for (let i = 0; i < vals.length; i++) {
+      const entry = vals[i] || {};
+      for (let j = 0; j < (children || []).length; j++) {
+        const child = children[j];
+        const childVal = entry[child.id];
+        const childField = Object.assign({}, child, {
+          required: child.required ?? child.mandatory ?? child.metadata?.required,
+          min: child.min ?? child.metadata?.min,
+          max: child.max ?? child.metadata?.max,
+          pattern: child.pattern ?? child.metadata?.pattern,
+          decimals: child.decimals ?? child.metadata?.decimals,
+          label: child.label,
+          type: child.type,
+        });
+        const childErr = this.validateSingleField(childField, childVal);
+        if (childErr) {
+          errors[i][child.id] = `Entry ${i + 1}: ${childErr}`;
+        }
+      }
+    }
+
+    if (max_multifield && vals.length > max_multifield) {
+      errors[0]._group = `${label} cannot have more than ${max_multifield} entries`;
+    }
+
+    return errors;
   }
 
   static validateSingleField(field, value) {
@@ -20,6 +79,18 @@ class ValidationService {
     const val = value !== undefined && value !== null ? value.toString().trim() : '';
 
     // Required validation
+    if (field.type === 'group') {
+      // Validate each child and return an object mapping childId -> error (string or array)
+      const childErrors = {};
+      const children = field.children || field.metadata?.children || [];
+      children.forEach((child) => {
+        const childVal = value ? value[child.id] : undefined;
+        const err = this.validateField(child, childVal);
+        childErrors[child.id] = err || '';
+      });
+      return childErrors;
+    }
+
     if (required && !val) {
       return `${label} is required`;
     }
@@ -231,10 +302,28 @@ class ValidationService {
       const val = data ? data[name] : undefined;
       const error = this.validateField(field, val);
 
-      // normalize: if validateMultiField returned undefined -> set [] (no errors)
+      // normalize: array => multi-field per-index errors
       if (Array.isArray(error)) {
-        // check if any non-empty in array
-        const hasAny = error.some(e => e && e.toString().trim() !== '');
+        const hasAny = error.some(e => {
+          if (!e) return false;
+          if (typeof e === 'object') {
+            return Object.values(e).some(v => {
+              if (!v) return false;
+              if (Array.isArray(v)) return v.some(x => x && x.toString().trim() !== '');
+              return v.toString().trim() !== '';
+            });
+          }
+          return e.toString().trim() !== '';
+        });
+        if (hasAny) isValid = false;
+        errors[name] = error;
+      } else if (error && typeof error === 'object') {
+        // group single-field errors: object mapping childId -> error
+        const hasAny = Object.values(error).some(v => {
+          if (!v) return false;
+          if (Array.isArray(v)) return v.some(x => x && x.toString().trim() !== '');
+          return v.toString().trim() !== '';
+        });
         if (hasAny) isValid = false;
         errors[name] = error;
       } else {

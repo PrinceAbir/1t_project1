@@ -116,6 +116,7 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
       type: f.type,
       required: !!(f.metadata?.required || f.mandatory),
       multi: !!(f.metadata?.multi || f.multi || f.multivalued),
+      children: f.children || f.metadata?.children || null,
       min: f.metadata?.min ?? f.min,
       max: f.metadata?.max ?? f.max,
       options: f.metadata?.options ?? f.options,
@@ -145,13 +146,30 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
 
 
     const toastErrors = Object.entries(errors).flatMap(([key, val]) => {
-      // val may be string '' or non-empty, or an array for multi fields
+      // val may be string, object (group child errors), or array for multi fields
       if (Array.isArray(val)) {
-        // map each non-empty entry to a toast error with index
-        return val
-          .map((msg, idx) => (msg && msg.toString().trim() ? { field: buildFieldId(activeTab, key, idx), message: msg } : null))
-          .filter(Boolean);
-      } else if (val && val.toString().trim()) {
+        return val.flatMap((msg, idx) => {
+          if (!msg) return [];
+          if (typeof msg === 'string' || msg.toString) {
+            const s = msg.toString();
+            if (s.trim()) return [{ field: buildFieldId(activeTab, key, idx), message: s }];
+            return [];
+          }
+          if (typeof msg === 'object') {
+            return Object.entries(msg).flatMap(([childId, m]) => (m ? [{ field: `${buildFieldId(activeTab, key, idx)}_${childId}`, message: m }] : []));
+          }
+          return [];
+        }).filter(Boolean);
+      } else if (val && typeof val === 'object') {
+        // single group/object errors
+        return Object.entries(val).flatMap(([childId, childErr]) => {
+          if (!childErr) return [];
+          if (Array.isArray(childErr)) {
+            return childErr.flatMap((ce, idx) => (ce ? [{ field: `${buildFieldId(activeTab, key)}_${childId}_${idx}`, message: ce }] : []));
+          }
+          return [{ field: `${buildFieldId(activeTab, key)}_${childId}`, message: childErr }];
+        });
+      } else if (val && val.toString && val.toString().trim()) {
         return [{ field: buildFieldId(activeTab, key), message: val }];
       }
       return [];
