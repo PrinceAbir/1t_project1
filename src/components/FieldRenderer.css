@@ -86,3 +86,22 @@
 .group-child-row label{flex:0 0 170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:#0b3b61}
 .group-child-row .t24-input{flex:1;min-width:0}
 .sr-only{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}
+
+/* Optional form grid container. Wrap multiple `t24-form-field` items in a container
+	with class `t24-form` to enable 1/2/3 column layouts. You can force a specific
+	column count by adding `cols-1`, `cols-2` or `cols-3` on the same container. */
+.t24-form{display:grid;grid-template-columns:repeat(1,1fr);gap:16px}
+.t24-form.cols-1{grid-template-columns:repeat(1,1fr)}
+.t24-form.cols-2{grid-template-columns:repeat(2,1fr)}
+.t24-form.cols-3{grid-template-columns:repeat(3,1fr)}
+
+/* Responsive defaults: 1 column on small, 2 on medium, 3 on large screens */
+@media (min-width:600px){.t24-form{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1000px){.t24-form{grid-template-columns:repeat(3,1fr)}}
+
+/* Ensure individual fields stretch correctly inside grid cells */
+.t24-form .t24-form-field{width:100%}
+
+/* Support for T24TransactExplorer's grid wrapper */
+.t24-form-grid{display:grid;gap:16px;align-items:start}
+.t24-form-grid > .t24-form-field{width:100%}

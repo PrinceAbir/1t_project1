@@ -1,7 +1,8 @@
-// src/App.js (updated: centralized routing with path params, added 404, lazy loading for efficiency)
+// src/App.js (updated: added direct route for /mainapp/etd to ETDDesigner)
 import React, { lazy, Suspense } from 'react';
 // Note: runtime require used below to avoid Jest/ESM resolver issues
 import './App.css';
+
 // Load routing components at runtime to avoid test-time resolver issues
 let Router = ({ children }) => <>{children}</>;
 let Routes = ({ children }) => <>{children}</>;
@@ -19,9 +20,10 @@ try {
   // ignore - fallback components will be used
 }
 
-
 const HomePage = lazy(() => import('./components/Homepage'));
 const MainApp = lazy(() => import('./components/MainApp'));
+const MetaBuilder = lazy(() => import('./components/MetaBuilder'));
+const ETDDesigner = lazy(() => import('./ETD/ETDDesigner'));
 
 function App() {
   return (
@@ -30,8 +32,33 @@ function App() {
         <Suspense fallback={<div>Loading...</div>}>
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/mainapp/:module" element={<MainApp />} /> {/* Updated to path param */}
-            <Route path="*" element={<div>404 - Page Not Found. <button onClick={() => window.location.href = '/'}>Go Home</button></div>} /> {/* Edge case: 404 */}
+            <Route path="/meta-builder" element={<MetaBuilder />} />
+
+            {/* Direct route for ETD module - this fixes the "invalid module" error */}
+            <Route path="/mainapp/etd" element={<ETDDesigner />} />
+
+            {/* Catch-all for other modules (customer, funds, account, deposit, lending) */}
+            <Route path="/mainapp/:module" element={<MainApp />} />
+
+            {/* Optional: old direct route if anyone bookmarks it */}
+            {/* <Route path="/etd-designer" element={<ETDDesigner />} /> */}
+
+            {/* 404 Fallback */}
+            <Route 
+              path="*" 
+              element={
+                <div style={{ padding: '40px', textAlign: 'center' }}>
+                  <h2>404 - Page Not Found</h2>
+                  <p>The page you're looking for doesn't exist.</p>
+                  <button 
+                    onClick={() => window.location.href = '/'}
+                    style={{ padding: '10px 20px', marginTop: '20px', cursor: 'pointer' }}
+                  >
+                    Go Home
+                  </button>
+                </div>
+              } 
+            />
           </Routes>
         </Suspense>
       </div>

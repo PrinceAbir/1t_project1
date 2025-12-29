@@ -1,18 +1,20 @@
-// src/components/HomePage.js (updated: use navigate with path param /mainapp/:module, memoized)
+// src/components/HomePage.js (updated: added ETD as a full module card)
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Homepage.css';
 
+
 const HomePage = () => {
   const navigate = useNavigate();
 
-  // Available modules/applications (memoized)
+  // Available modules/applications (memoized) - Added ETD
   const MODULES = useMemo(() => [
     { id: 'customer', title: 'Customer', desc: 'Manage customers, profiles and KYC.', icon: '👤', color: '#667eea' },
     { id: 'funds', title: 'Fund Transfer', desc: 'Create and manage transfers.', icon: '💸', color: '#48bb78' },
     { id: 'account', title: 'Account', desc: 'Account opening and maintenance.', icon: '🏦', color: '#ed8936' },
     { id: 'deposit', title: 'Deposit', desc: 'Create deposit products and placements.', icon: '💰', color: '#9f7aea' },
-    { id: 'lending', title: 'Lending', desc: 'Loan origination and servicing.', icon: '📈', color: '#4299e1' }
+    { id: 'lending', title: 'Lending', desc: 'Loan origination and servicing.', icon: '📈', color: '#4299e1' },
+    { id: 'etd', title: 'Create App', desc: 'Create and design custom Electronic Transaction Documents.', icon: '📝', color: '#f56565' }  // New ETD module
   ], []);
 
   const handleModuleClick = (module) => {
@@ -28,8 +30,8 @@ const HomePage = () => {
       <header className="hp-header">
         <div className="header-left">
           <div className="logo">
-            <span className="logo-icon">T24</span>
-            <span className="logo-text">Transact Explorer</span>
+            <span className="logo-icon">1T</span>
+            <span className="logo-text">1 Technologies Ltd</span>
           </div>
         </div>
         <div className="header-right">
@@ -48,7 +50,7 @@ const HomePage = () => {
         {/* Hero Section */}
         <div className="hero-section">
           <div className="hero-content">
-            <h1>T24 Core Banking Applications</h1>
+            <h1>1 Technologies CBS</h1>
             <p>Select an application module to begin transaction processing</p>
           </div>
         </div>
@@ -56,8 +58,13 @@ const HomePage = () => {
         {/* Modules Grid */}
         <div className="modules-grid-section">
           <div className="section-header">
-            <h2>Application Modules</h2>
-            <p>Click on any module to proceed</p>
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px'}}>
+              <div>
+                <h2>Application Modules</h2>
+                <p>Click on any module to proceed</p>
+              </div>
+              {/* Removed the old "+ Create App" button */}
+            </div>
           </div>
           <div className="modules-grid">   
             {MODULES.map(module => (
@@ -110,9 +117,9 @@ const HomePage = () => {
       <footer className="hp-footer">
         <div className="footer-content">
           <div className="footer-left">
-            <span>T24 Transact Explorer v2.1.0</span>
+            <span>1 Technologies Explorer v1.0.0</span>
             <span className="footer-separator">•</span>
-            <span>Temenos Core Banking System</span>
+            <span>1T Core Banking System</span>
           </div>
           <div className="footer-right">
             <span>Session: Active</span>

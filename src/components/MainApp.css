@@ -172,7 +172,8 @@
 }
 
 .record-input {
-  width:44rem;
+  max-width: 40rem;
+  width: 35rem;
   padding: 1rem;
   font-size: 1rem;
   border: 2px solid #e2e8f0;
@@ -201,7 +202,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
+  padding: 0.5rem 0.7rem;
   border: 2px solid;
   border-radius: 8px;
   align-items: center;

@@ -131,6 +131,20 @@
   font-size: 0.75rem;
 }
 
+/* New ETD button */
+.new-etd-btn {
+  background: linear-gradient(90deg,#0b5fff,#4f8cff);
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(75,125,255,0.12);
+}
+
+.new-etd-btn:hover { opacity: 0.95; transform: translateY(-1px); }
+
 .modules-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);

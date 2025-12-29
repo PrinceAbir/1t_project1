@@ -1,0 +1,21 @@
+/* Minimal styles for MetaBuilder */
+.meta-builder{max-width:1100px;margin:20px auto;padding:16px;background:#fff;border:1px solid #e6eef5;border-radius:8px}
+.meta-builder h2{margin:0 0 12px 0}
+.meta-top{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.meta-row{display:flex;flex-direction:column;min-width:160px}
+.meta-row label{font-weight:600;color:#0b3b61;margin-bottom:6px}
+.meta-row input,.meta-row select{padding:8px;border:1px solid #cfd8e3;border-radius:6px}
+.fields-section{margin-top:12px}
+.fields-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.add-field{background:#0b5fff;color:#fff;border:none;padding:8px 10px;border-radius:6px;cursor:pointer}
+.field-card{border:1px dashed #e6eef5;padding:8px;border-radius:6px;margin-bottom:8px}
+.field-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.field-grid label{display:block;font-size:12px;color:#0b3b61;margin-bottom:6px}
+.field-grid input,.field-grid select{padding:8px;border:1px solid #cfd8e3;border-radius:6px;width:100%}
+.field-actions{display:flex;justify-content:flex-end;margin-top:8px}
+.remove-field{background:#fff;border:1px solid #e05353;color:#e05353;padding:6px 8px;border-radius:6px;cursor:pointer}
+.meta-actions{display:flex;gap:8px;margin-top:12px}
+.meta-actions button{padding:8px 12px;border-radius:6px;border:1px solid #cfd8e3;background:#fff;cursor:pointer}
+.json-preview{margin-top:12px}
+.json-preview label{display:block;font-weight:600;margin-bottom:6px}
+.json-preview textarea{width:100%;padding:8px;border:1px solid #e6eef5;border-radius:6px;background:#fbfdff}

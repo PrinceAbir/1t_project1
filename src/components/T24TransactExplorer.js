@@ -261,8 +261,7 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
 
         <div className="t24-form-container">
           <div
-            className="t24-form-grid"
-            style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+            className={`t24-form-grid t24-form ${'cols-' + (Number(columns) || 1)}`}
           >
             {currentTab.fields.map((field) => (
               <FieldRenderer
