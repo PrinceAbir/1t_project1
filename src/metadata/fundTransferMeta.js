@@ -1,4 +1,3 @@
-// src/metadata/fundTransferMeta.js
 const fundTransferMeta = {
   "application": "payment",
   "type": "core",

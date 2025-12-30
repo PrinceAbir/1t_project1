@@ -104,7 +104,7 @@ const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', read
             )}
           </div>
         ))}
-        {!readOnly && (!maxMulti || arr.length < maxMulti) && (<button type="button" className="add-multi-field" onClick={addMulti}>+ Add {label}</button>)}
+        {!readOnly && (!maxMulti || arr.length < maxMulti) && (<button type="button" className="add-multi-field" onClick={addMulti}>+</button>)}
       </div>
     );
   };
@@ -162,7 +162,7 @@ const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', read
             )}
           </div>
         ))}
-        {!readOnly && groupMulti && (!maxMulti || groups.length < maxMulti) && (<button type="button" className="add-multi-field" onClick={addMulti}>+{label}</button>)}
+        {!readOnly && groupMulti && (!maxMulti || groups.length < maxMulti) && (<button type="button" className="add-multi-field" onClick={addMulti}>+</button>)}
       </div>
     );
   };

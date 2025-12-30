@@ -28,7 +28,7 @@ const HomePage = () => {
       <header className="hp-header">
         <div className="header-left">
           <div className="logo">
-            <span className="logo-icon">T24</span>
+            <span className="logo-icon">1T</span>
             <span className="logo-text">Transact Explorer</span>
           </div>
         </div>
@@ -48,7 +48,7 @@ const HomePage = () => {
         {/* Hero Section */}
         <div className="hero-section">
           <div className="hero-content">
-            <h1>T24 Core Banking Applications</h1>
+            <h1>1Technologies Core Banking Applications</h1>
             <p>Select an application module to begin transaction processing</p>
           </div>
         </div>
@@ -110,9 +110,9 @@ const HomePage = () => {
       <footer className="hp-footer">
         <div className="footer-content">
           <div className="footer-left">
-            <span>T24 Transact Explorer v2.1.0</span>
+            <span>1Technologies Transact Explorer v2.1.0</span>
             <span className="footer-separator">•</span>
-            <span>Temenos Core Banking System</span>
+            <span>1Technologiesltd Core Banking System</span>
           </div>
           <div className="footer-right">
             <span>Session: Active</span>

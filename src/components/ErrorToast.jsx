@@ -37,13 +37,15 @@ const ErrorToast = ({ message, buttonText, onButtonClick, onClose, override = fa
   };
 
   return (
-    <div className="toast-container">
-      <div className="toast-box">
-
-        {/* Header */}
-        {isErrorArray && (
-          <div className="toast-header">
-            <span className="toast-error-count">Total Errors: {totalErrors}</span>
+  <div className="toast-container">
+    <div className="toast-box">
+      {/* Header with Close Button */}
+      <div className="toast-header">
+        <span className="toast-error-count">
+          {isErrorArray ? `Total Errors: ${totalErrors}` : "Validation Message"}
+        </span>
+        <div className="toast-header-actions">
+          {isErrorArray && (
             <span
               className="toast-minimize"
               role="button"
@@ -53,53 +55,45 @@ const ErrorToast = ({ message, buttonText, onButtonClick, onClose, override = fa
             >
               {minimized ? "▾" : "▴"}
             </span>
-          </div>
-        )}
-
-        {/* Error List */}
-        {!minimized && (
-          <div className="toast-message">
-            {isErrorArray ? (
-              <div>
-                {message.map((err, index) => (
-                  <div
-                    key={index}
-                    className="toast-error-item"
-                    onClick={() => scrollToField(err.field)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => ["Enter", " "].includes(e.key) && scrollToField(err.field)}
-                  >
-                    • <strong>{err.field}</strong>: {err.message}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <span>{message}</span>
-            )}
-          </div>
-        )}
-
-        {/* Optional Button */}
-        {/* {override && buttonText && (
-          <button className="toast-button" onClick={onButtonClick}>
-            {buttonText}
-          </button>
-        )} */}
-
-        {/* Close */}
-        <span
-          className="toast-close"
-          role="button"
-          tabIndex={0}
-          onClick={onClose}
-          onKeyDown={(e) => e.key === "Enter" && onClose()}
-        >
-          ×
-        </span>
+          )}
+          <span
+            className="toast-close"
+            role="button"
+            tabIndex={0}
+            onClick={onClose}
+            onKeyDown={(e) => e.key === "Enter" && onClose()}
+          >
+            ×
+          </span>
+        </div>
       </div>
+
+      {/* Message Content - Only show when not minimized */}
+      {!minimized && (
+        <div className="toast-message">
+          {isErrorArray ? (
+            <div>
+              {message.map((err, index) => (
+                <div
+                  key={index}
+                  className="toast-error-item"
+                  onClick={() => scrollToField(err.field)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => ["Enter", " "].includes(e.key) && scrollToField(err.field)}
+                >
+                  • <strong>{err.field}</strong>: {err.message}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <span>{message}</span>
+          )}
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
 };
 
 export default React.memo(ErrorToast);

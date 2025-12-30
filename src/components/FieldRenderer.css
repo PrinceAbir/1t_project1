@@ -35,7 +35,7 @@
 	margin-top:6px;
 	min-width:0;
 }
-.add-multi-field:hover{background:#094ecc}
+.add-multi-field:hover{background:#c8d3e6}
 .add-multi-field .add-icon{font-weight:700;font-size:16px;line-height:1}
 .add-multi-field .add-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;font-size:13px;min-width:0;max-width:14ch}
 /* Make label font responsive so it shrinks on narrow layouts instead of forcing button growth */
