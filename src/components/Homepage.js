@@ -1,27 +1,42 @@
-// src/components/HomePage.js (updated: added ETD as a full module card)
+// src/components/HomePage.js
+
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Homepage.css';
 
-
 const HomePage = () => {
   const navigate = useNavigate();
 
-  // Available modules/applications (memoized) - Added ETD
+  // Available modules/applications (memoized)
   const MODULES = useMemo(() => [
     { id: 'customer', title: 'Customer', desc: 'Manage customers, profiles and KYC.', icon: '👤', color: '#667eea' },
     { id: 'funds', title: 'Fund Transfer', desc: 'Create and manage transfers.', icon: '💸', color: '#48bb78' },
     { id: 'account', title: 'Account', desc: 'Account opening and maintenance.', icon: '🏦', color: '#ed8936' },
     { id: 'deposit', title: 'Deposit', desc: 'Create deposit products and placements.', icon: '💰', color: '#9f7aea' },
     { id: 'lending', title: 'Lending', desc: 'Loan origination and servicing.', icon: '📈', color: '#4299e1' },
-    { id: 'etd', title: 'Create App', desc: 'Create and design custom Electronic Transaction Documents.', icon: '📝', color: '#f56565' }  // New ETD module
+    { id: 'etd', title: 'Create App', desc: 'Create and design custom Electronic Transaction Documents.', icon: '📝', color: '#f56565' },
+    
+    // NEW MODULE: Version Designer (just like ETD)
+    {
+      id: 'version-designer',
+      title: 'Version Designer',
+      desc: 'Create and customize versions of core applications (Customer, Fund Transfer, etc.).',
+      icon: '🔧',
+      color: '#7c3aed'  // Vibrant purple – stands out nicely
+    }
   ], []);
 
   const handleModuleClick = (module) => {
-    // Navigate to MainApp with module as path param
-    navigate(`/mainapp/${module.id}`, { 
-      state: { module: module } // Optional: pass module data via state
-    });
+    if (module.id === 'etd') {
+      navigate('/mainapp/etd');
+    } else if (module.id === 'version-designer') {
+      navigate('/mainapp/version-designer');  // Matches your new route
+    } else {
+      // All other transactional modules go through MainApp
+      navigate(`/mainapp/${module.id}`, { 
+        state: { module: module } 
+      });
+    }
   };
 
   return (
@@ -63,7 +78,6 @@ const HomePage = () => {
                 <h2>Application Modules</h2>
                 <p>Click on any module to proceed</p>
               </div>
-              {/* Removed the old "+ Create App" button */}
             </div>
           </div>
           <div className="modules-grid">   

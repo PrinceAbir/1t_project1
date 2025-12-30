@@ -1,29 +1,26 @@
-// src/App.js (updated: added direct route for /mainapp/etd to ETDDesigner)
+// src/App.js (updated with both route patterns)
 import React, { lazy, Suspense } from 'react';
-// Note: runtime require used below to avoid Jest/ESM resolver issues
 import './App.css';
 
-// Load routing components at runtime to avoid test-time resolver issues
 let Router = ({ children }) => <>{children}</>;
 let Routes = ({ children }) => <>{children}</>;
 let Route = ({ element }) => element;
 
 try {
-  // Require react-router-dom if available (avoids ESM-only resolution issues in Jest)
-  // Wrap in try/catch so environments without the package (or with ESM-only builds) fall back.
-  // eslint-disable-next-line global-require
   const rr = require('react-router-dom');
   Router = rr.BrowserRouter || rr.Router || Router;
   Routes = rr.Routes || Routes;
   Route = rr.Route || Route;
 } catch (e) {
-  // ignore - fallback components will be used
+  // ignore
 }
 
 const HomePage = lazy(() => import('./components/Homepage'));
 const MainApp = lazy(() => import('./components/MainApp'));
 const MetaBuilder = lazy(() => import('./components/MetaBuilder'));
 const ETDDesigner = lazy(() => import('./ETD/ETDDesigner'));
+const VersionDesignerHome = lazy(() => import('./version/VersionDesignerHome'));
+const VersionDesignerWorkspace = lazy(() => import('./version/VersionDesignerWorkspace'));
 
 function App() {
   return (
@@ -34,14 +31,20 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/meta-builder" element={<MetaBuilder />} />
 
-            {/* Direct route for ETD module - this fixes the "invalid module" error */}
+            {/* Version Designer Routes - Support both patterns */}
+            {/* Pattern 1: Without /mainapp/ prefix */}
+            <Route path="/version-designer" element={<VersionDesignerHome />} />
+            <Route path="/version-designer/workspace" element={<VersionDesignerWorkspace />} />
+            
+            {/* Pattern 2: With /mainapp/ prefix (for consistency with other modules) */}
+            <Route path="/mainapp/version-designer" element={<VersionDesignerHome />} />
+            <Route path="/mainapp/version-designer/workspace" element={<VersionDesignerWorkspace />} />
+            
+            {/* ETD route */}
             <Route path="/mainapp/etd" element={<ETDDesigner />} />
 
-            {/* Catch-all for other modules (customer, funds, account, deposit, lending) */}
+            {/* CATCH-ALL route for other modules */}
             <Route path="/mainapp/:module" element={<MainApp />} />
-
-            {/* Optional: old direct route if anyone bookmarks it */}
-            {/* <Route path="/etd-designer" element={<ETDDesigner />} /> */}
 
             {/* 404 Fallback */}
             <Route 

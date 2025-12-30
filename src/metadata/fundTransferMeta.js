@@ -1,6 +1,6 @@
 // src/metadata/fundTransferMeta.js
 const fundTransferMeta = {
-  "application": "payment",
+  "application": "FUND.TRANSFER",
   "type": "core",
   "columns":2,
   "fields": {
