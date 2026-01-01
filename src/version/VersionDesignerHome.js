@@ -130,7 +130,7 @@ const VersionDesignerHome = () => {
                   </option>
                   {availableApps.map((app) => (
                     <option key={app.name} value={app.name}>
-                      {app.name.replace('.', ' ')} {app.icon || ''}
+                      {app.name.replace('.', ' ').toUpperCase()} {app.icon || ''}
                     </option>
                   ))}
                 </select>

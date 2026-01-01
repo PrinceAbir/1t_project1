@@ -93,7 +93,7 @@ const ErrorToast = ({ message, buttonText, onButtonClick, onClose, override = fa
                     tabIndex={0}
                     onKeyDown={(e) => ["Enter", " "].includes(e.key) && scrollToField(err.field)}
                   >
-                    • <strong>{err.field}</strong>: {err.message}
+                    • {err.message}
                   </div>
                 ))}
               </div>

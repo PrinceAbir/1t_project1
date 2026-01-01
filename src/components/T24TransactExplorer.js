@@ -10,7 +10,7 @@ import META_MAP from "../metadata"; // dynamic metadata loader
 import "../App.css";
 
 const T24TransactExplorer = ({ module, mode = 'create' }) => {
-  const metadata = META_MAP[module];
+  const metadata = META_MAP[module.toUpperCase()];
 
   const [activeTab, setActiveTab] = useState("MAIN");
   const [formState, setFormState] = useState({});
