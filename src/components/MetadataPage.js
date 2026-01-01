@@ -147,67 +147,82 @@ const MetadataPage = () => {
   const isFileType = formData.type === "file";
 
   const saveField = async () => {
-  if (!formData.field_name?.trim()) {
-    addToast("Field name is required", "error");
-    return;
-  }
-
-  const key = editingKey || formData.field_name.trim().toLowerCase().replace(/\s+/g, "_");
-
-  if (!editingKey && metadata?.fields[key]) {
-    addToast(`Field "${key}" already exists`, "error");
-    return;
-  }
-
-  const cleaned = {
-    field_name: formData.field_name.trim(),
-    label: formData.label || formData.field_name.trim(),
-    type: formData.type,
-    multi: formData.multi || false,
-    multivalued: formData.multi || false,
-    mandatory: formData.mandatory || false,
-    min_length: formData.min_length ? Number(formData.min_length) : undefined,
-    max_length: formData.max_length ? Number(formData.max_length) : undefined,
-    position: formData.position?.[0] && formData.position?.[1]
-      ? [Number(formData.position[0]), Number(formData.position[1])]
-      : undefined,
-    options: isSelectType && formData.options?.filter(o => o.trim()).length > 0
-      ? formData.options.filter(o => o.trim())
-      : undefined,
-    max_multifield: isMultiValue && formData.max_multifield ? Number(formData.max_multifield) : undefined,
-    max_file_size: isFileType && formData.max_file_size ? Number(formData.max_file_size) : undefined,
-  };
-
-  Object.keys(cleaned).forEach(k => cleaned[k] === undefined && delete cleaned[k]);
-
-  const endpoint = module === "funds" ? "fundtransfer" : module;
-  const url = `${API_BASE}/${endpoint}/field${editingKey ? `/${key}` : ''}`;
-
-  try {
-    const response = await fetch(url, {
-      method: editingKey ? "PATCH" : "POST", // ← POST for new, PATCH for edit
-      headers: { "Content-Type": "application/json" },
-      body: editingKey
-        ? JSON.stringify(cleaned) // PATCH: send definition directly
-        : JSON.stringify({ key, definition: cleaned }), // POST: wrap in { key, definition }
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Save failed (${response.status}): ${errText}`);
+    if (!formData.field_name?.trim()) {
+      addToast("Field name is required", "error");
+      return;
     }
 
-    // Update local state
-    const newFields = { ...metadata.fields, [key]: cleaned };
-    setMetadata({ ...metadata, fields: newFields });
-    markChanged();
-    addToast(editingKey ? "Field updated on server" : "New field created on server", "success");
-    closeModal();
-  } catch (err) {
-    console.error("Save error:", err);
-    addToast("Failed to save field to server", "error");
-  }
-};
+    const key =
+      editingKey ||
+      formData.field_name.trim().toLowerCase().replace(/\s+/g, "_");
+
+    if (!editingKey && metadata?.fields[key]) {
+      addToast(`Field "${key}" already exists`, "error");
+      return;
+    }
+
+    const cleaned = {
+      field_name: formData.field_name.trim(),
+      label: formData.label || formData.field_name.trim(),
+      type: formData.type,
+      multi: formData.multi || false,
+      multivalued: formData.multi || false,
+      mandatory: formData.mandatory || false,
+      min_length: formData.min_length ? Number(formData.min_length) : undefined,
+      max_length: formData.max_length ? Number(formData.max_length) : undefined,
+      position:
+        formData.position?.[0] && formData.position?.[1]
+          ? [Number(formData.position[0]), Number(formData.position[1])]
+          : undefined,
+      options:
+        isSelectType && formData.options?.filter((o) => o.trim()).length > 0
+          ? formData.options.filter((o) => o.trim())
+          : undefined,
+      max_multifield:
+        isMultiValue && formData.max_multifield
+          ? Number(formData.max_multifield)
+          : undefined,
+      max_file_size:
+        isFileType && formData.max_file_size
+          ? Number(formData.max_file_size)
+          : undefined,
+    };
+
+    Object.keys(cleaned).forEach(
+      (k) => cleaned[k] === undefined && delete cleaned[k]
+    );
+
+    const endpoint = module === "funds" ? "fundtransfer" : module;
+    const url = `${API_BASE}/${endpoint}/field${editingKey ? `/${key}` : ""}`;
+
+    try {
+      const response = await fetch(url, {
+        method: editingKey ? "PATCH" : "POST", // ← POST for new, PATCH for edit
+        headers: { "Content-Type": "application/json" },
+        body: editingKey
+          ? JSON.stringify(cleaned) // PATCH: send definition directly
+          : JSON.stringify({ key, definition: cleaned }), // POST: wrap in { key, definition }
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Save failed (${response.status}): ${errText}`);
+      }
+
+      // Update local state
+      const newFields = { ...metadata.fields, [key]: cleaned };
+      setMetadata({ ...metadata, fields: newFields });
+      markChanged();
+      addToast(
+        editingKey ? "Field updated on server" : "New field created on server",
+        "success"
+      );
+      closeModal();
+    } catch (err) {
+      console.error("Save error:", err);
+      addToast("Failed to save field to server", "error");
+    }
+  };
 
   const saveGroupField = async () => {
     if (!currentGroupKey || groupChildren.length === 0) {
@@ -223,11 +238,14 @@ const MetadataPage = () => {
     const endpoint = module === "funds" ? "fundtransfer" : module;
 
     try {
-      const response = await fetch(`${API_BASE}/${endpoint}/field/${currentGroupKey}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedGroup),
-      });
+      const response = await fetch(
+        `${API_BASE}/${endpoint}/field/${currentGroupKey}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedGroup),
+        }
+      );
 
       if (!response.ok) throw new Error("Failed to update group");
 
@@ -301,7 +319,9 @@ const MetadataPage = () => {
   return (
     <div className="metadata-page">
       <header className="metadata-page-header">
-        <button className="back-btn" onClick={() => navigate(-1)}>← Back</button>
+        <button className="back-btn" onClick={() => navigate(-1)}>
+          ← Back
+        </button>
         <h1>{getModuleDisplayName()} - Metadata Editor</h1>
         <div className="action-button-group">
           <button className="add-field-btn" onClick={() => openModal()}>
@@ -321,31 +341,69 @@ const MetadataPage = () => {
               <th>Mandatory</th>
               <th>Multi</th>
               <th>Max Multi</th>
-              <th>Children</th>
+              <th>Position</th>
+              <th>Min Len</th>
+              <th>Max Len</th>
+              <th>Max File Size</th>
+              <th>Options</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {fields.length === 0 ? (
-              <tr><td colSpan="8" className="empty-message">No fields defined</td></tr>
+              <tr>
+                <td colSpan="12" className="empty-message">
+                  No fields defined
+                </td>
+              </tr>
             ) : (
               fields.map(([key, f]) => (
                 <tr key={key}>
-                  <td><strong>{key}</strong></td>
+                  <td>
+                    <strong>{key}</strong>
+                  </td>
                   <td>{f.label || "-"}</td>
                   <td>{f.type === "group" ? "Group" : f.type || "string"}</td>
                   <td className="yes-no-icon">
-                    {f.mandatory ? <span className="yes-icon">✓</span> : <span className="no-icon">−</span>}
+                    {f.mandatory ? (
+                      <span className="yes-icon">✓</span>
+                    ) : (
+                      <span className="no-icon">−</span>
+                    )}
                   </td>
                   <td className="yes-no-icon">
-                    {f.multi || f.multivalued ? <span className="yes-icon">✓</span> : <span className="no-icon">−</span>}
+                    {f.multi || f.multivalued ? (
+                      <span className="yes-icon">✓</span>
+                    ) : (
+                      <span className="no-icon">−</span>
+                    )}
                   </td>
                   <td>{f.max_multifield || "-"}</td>
-                  <td>{f.type === "group" ? (f.fields?.length || 0) + " fields" : "-"}</td>
+                  <td>{f.position ? `[${f.position.join(", ")}]` : "-"}</td>
+                  <td>{f.min_length || "-"}</td>
+                  <td>{f.max_length || "-"}</td>
+                  <td>
+                    {f.max_file_size
+                      ? `${(f.max_file_size / 1024 / 1024).toFixed(1)} MB`
+                      : "-"}
+                  </td>
+                  <td>
+                    {Array.isArray(f.options) ? f.options.join(", ") : "-"}
+                  </td>
                   <td>
                     <div className="action-icons">
-                      <button className="icon-btn edit-icon" onClick={() => openModal(key)}>✏️</button>
-                      <button className="icon-btn delete-icon" onClick={() => deleteField(key)}>🗑️</button>
+                      <button
+                        className="icon-btn edit-icon"
+                        onClick={() => openModal(key)}
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        className="icon-btn delete-icon"
+                        onClick={() => deleteField(key)}
+                      >
+                        🗑️
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -368,9 +426,16 @@ const MetadataPage = () => {
               </strong>
               {toast.message}
             </div>
-            {toast.actions && <div className="toast-actions">{toast.actions}</div>}
+            {toast.actions && (
+              <div className="toast-actions">{toast.actions}</div>
+            )}
             {toast.duration > 0 && (
-              <button className="toast-close" onClick={() => removeToast(toast.id)}>×</button>
+              <button
+                className="toast-close"
+                onClick={() => removeToast(toast.id)}
+              >
+                ×
+              </button>
             )}
           </div>
         ))}
@@ -381,7 +446,10 @@ const MetadataPage = () => {
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{editingKey ? "Edit Field" : "Add New Field"}</h2>
-            <div className="modal-content" style={{ maxHeight: "70vh", overflowY: "auto" }}>
+            <div
+              className="modal-content"
+              style={{ maxHeight: "70vh", overflowY: "auto" }}
+            >
               <div className="modal-form">
                 <div className="form-row">
                   <label>
@@ -389,7 +457,9 @@ const MetadataPage = () => {
                     <input
                       type="text"
                       value={formData.field_name || ""}
-                      onChange={(e) => setFormData({ ...formData, field_name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, field_name: e.target.value })
+                      }
                       disabled={!!editingKey}
                       placeholder="e.g. transaction_type"
                     />
@@ -400,7 +470,9 @@ const MetadataPage = () => {
                     <input
                       type="text"
                       value={formData.label || ""}
-                      onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, label: e.target.value })
+                      }
                       placeholder="Transaction Type"
                     />
                   </label>
@@ -411,7 +483,9 @@ const MetadataPage = () => {
                     Type
                     <select
                       value={formData.type || "string"}
-                      onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, type: e.target.value })
+                      }
                     >
                       <option value="string">string</option>
                       <option value="int">int</option>
@@ -429,8 +503,15 @@ const MetadataPage = () => {
 
                   <div className="checkbox-group">
                     <span
-                      className={`checkbox-icon ${formData.mandatory ? "yes" : "no"}`}
-                      onClick={() => setFormData({ ...formData, mandatory: !formData.mandatory })}
+                      className={`checkbox-icon ${
+                        formData.mandatory ? "yes" : "no"
+                      }`}
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          mandatory: !formData.mandatory,
+                        })
+                      }
                     >
                       {formData.mandatory ? "✓" : "−"}
                     </span>
@@ -441,8 +522,12 @@ const MetadataPage = () => {
                 <div className="form-row">
                   <div className="checkbox-group">
                     <span
-                      className={`checkbox-icon ${formData.multi ? "yes" : "no"}`}
-                      onClick={() => setFormData({ ...formData, multi: !formData.multi })}
+                      className={`checkbox-icon ${
+                        formData.multi ? "yes" : "no"
+                      }`}
+                      onClick={() =>
+                        setFormData({ ...formData, multi: !formData.multi })
+                      }
                     >
                       {formData.multi ? "✓" : "−"}
                     </span>
@@ -454,7 +539,14 @@ const MetadataPage = () => {
                     <input
                       type="number"
                       value={formData.max_multifield || ""}
-                      onChange={(e) => setFormData({ ...formData, max_multifield: e.target.value ? Number(e.target.value) : "" })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          max_multifield: e.target.value
+                            ? Number(e.target.value)
+                            : "",
+                        })
+                      }
                       min="1"
                     />
                   </label>
@@ -467,7 +559,14 @@ const MetadataPage = () => {
                       <input
                         type="number"
                         value={formData.max_file_size || ""}
-                        onChange={(e) => setFormData({ ...formData, max_file_size: e.target.value ? Number(e.target.value) : "" })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            max_file_size: e.target.value
+                              ? Number(e.target.value)
+                              : "",
+                          })
+                        }
                         placeholder="e.g. 5242880 for 5MB"
                       />
                     </label>
@@ -482,7 +581,15 @@ const MetadataPage = () => {
                         type="text"
                         placeholder="e.g. Internal Transfer, External Transfer"
                         value={(formData.options || []).join(", ")}
-                        onChange={(e) => setFormData({ ...formData, options: e.target.value.split(",").map(o => o.trim()).filter(o => o) })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            options: e.target.value
+                              .split(",")
+                              .map((o) => o.trim())
+                              .filter((o) => o),
+                          })
+                        }
                       />
                     </label>
                   </div>
@@ -491,7 +598,10 @@ const MetadataPage = () => {
                 {formData.type === "group" && (
                   <div className="form-row">
                     <div className="group-info">
-                      <p><strong>Note:</strong> Group fields are edited separately. Click "Edit" to manage child fields.</p>
+                      <p>
+                        <strong>Note:</strong> Group fields are edited
+                        separately. Click "Edit" to manage child fields.
+                      </p>
                     </div>
                   </div>
                 )}
@@ -504,14 +614,30 @@ const MetadataPage = () => {
                         type="number"
                         placeholder="Row"
                         value={formData.position?.[0] || ""}
-                        onChange={(e) => setFormData({ ...formData, position: [Number(e.target.value) || 1, formData.position?.[1] || 1] })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            position: [
+                              Number(e.target.value) || 1,
+                              formData.position?.[1] || 1,
+                            ],
+                          })
+                        }
                         min="1"
                       />
                       <input
                         type="number"
                         placeholder="Col"
                         value={formData.position?.[1] || ""}
-                        onChange={(e) => setFormData({ ...formData, position: [formData.position?.[0] || 1, Number(e.target.value) || 1] })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            position: [
+                              formData.position?.[0] || 1,
+                              Number(e.target.value) || 1,
+                            ],
+                          })
+                        }
                         min="1"
                       />
                     </div>
@@ -522,7 +648,14 @@ const MetadataPage = () => {
                     <input
                       type="number"
                       value={formData.min_length || ""}
-                      onChange={(e) => setFormData({ ...formData, min_length: e.target.value ? Number(e.target.value) : "" })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          min_length: e.target.value
+                            ? Number(e.target.value)
+                            : "",
+                        })
+                      }
                     />
                   </label>
 
@@ -531,7 +664,14 @@ const MetadataPage = () => {
                     <input
                       type="number"
                       value={formData.max_length || ""}
-                      onChange={(e) => setFormData({ ...formData, max_length: e.target.value ? Number(e.target.value) : "" })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          max_length: e.target.value
+                            ? Number(e.target.value)
+                            : "",
+                        })
+                      }
                     />
                   </label>
                 </div>
@@ -553,16 +693,25 @@ const MetadataPage = () => {
         <div className="modal-overlay" onClick={closeGroupModal}>
           <div className="modal wide" onClick={(e) => e.stopPropagation()}>
             <h2>Edit Group: {currentGroupKey}</h2>
-            <div className="group-editor" style={{ maxHeight: "60vh", overflowY: "auto" }}>
+            <div
+              className="group-editor"
+              style={{ maxHeight: "60vh", overflowY: "auto" }}
+            >
               <div className="children-header">
                 <span>Child Fields ({groupChildren.length})</span>
                 <button className="add-child-btn" onClick={addGroupChild}>
                   + Add Child Field
                 </button>
               </div>
-              
+
               {groupChildren.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "20px", color: "#666" }}>
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "20px",
+                    color: "#666",
+                  }}
+                >
                   No child fields. Add one above.
                 </div>
               ) : (
@@ -571,18 +720,24 @@ const MetadataPage = () => {
                     <input
                       placeholder="Field Name"
                       value={child.field_name || ""}
-                      onChange={(e) => updateGroupChild(idx, "field_name", e.target.value)}
+                      onChange={(e) =>
+                        updateGroupChild(idx, "field_name", e.target.value)
+                      }
                       style={{ minWidth: "120px" }}
                     />
                     <input
                       placeholder="Label"
                       value={child.label || ""}
-                      onChange={(e) => updateGroupChild(idx, "label", e.target.value)}
+                      onChange={(e) =>
+                        updateGroupChild(idx, "label", e.target.value)
+                      }
                       style={{ minWidth: "140px" }}
                     />
                     <select
                       value={child.type || "string"}
-                      onChange={(e) => updateGroupChild(idx, "type", e.target.value)}
+                      onChange={(e) =>
+                        updateGroupChild(idx, "type", e.target.value)
+                      }
                       style={{ minWidth: "100px" }}
                     >
                       <option value="string">string</option>
@@ -594,8 +749,12 @@ const MetadataPage = () => {
                     </select>
                     <div className="checkbox-group">
                       <span
-                        className={`checkbox-icon ${child.mandatory ? "yes" : "no"}`}
-                        onClick={() => updateGroupChild(idx, "mandatory", !child.mandatory)}
+                        className={`checkbox-icon ${
+                          child.mandatory ? "yes" : "no"
+                        }`}
+                        onClick={() =>
+                          updateGroupChild(idx, "mandatory", !child.mandatory)
+                        }
                       >
                         {child.mandatory ? "✓" : "−"}
                       </span>
@@ -614,8 +773,8 @@ const MetadataPage = () => {
             </div>
             <div className="modal-actions">
               <button onClick={closeGroupModal}>Cancel</button>
-              <button 
-                className="save-btn" 
+              <button
+                className="save-btn"
                 onClick={saveGroupField}
                 disabled={groupChildren.length === 0}
               >

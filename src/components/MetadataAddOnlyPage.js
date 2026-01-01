@@ -260,7 +260,7 @@ const MetadataAddOnlyPage = () => {
                             }
                             title={expandedGroups[key] ? "Collapse" : "Expand"}
                           >
-                            {expandedGroups[key] ? "−" : "+"}
+                            {expandedGroups[key] ? "▴" : "▾"}
                           </button>
                         )}
                       </td>
