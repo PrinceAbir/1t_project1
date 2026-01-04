@@ -1,7 +1,7 @@
 const customerMetaData = {
   "application": "customer",
   "type": "core",
-  "columns":1,
+  "columns":2,
   "fields": {
     "customer.name.1": {
       "field_name": "customer_name_1",
