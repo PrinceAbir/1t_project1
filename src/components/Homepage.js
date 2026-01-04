@@ -1,4 +1,5 @@
-// src/components/HomePage.js (updated: use navigate with path param /mainapp/:module, memoized)
+// src/components/HomePage.js
+
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Homepage.css';
@@ -12,14 +13,30 @@ const HomePage = () => {
     { id: 'funds', title: 'Fund Transfer', desc: 'Create and manage transfers.', icon: '💸', color: '#48bb78' },
     { id: 'account', title: 'Account', desc: 'Account opening and maintenance.', icon: '🏦', color: '#ed8936' },
     { id: 'deposit', title: 'Deposit', desc: 'Create deposit products and placements.', icon: '💰', color: '#9f7aea' },
-    { id: 'lending', title: 'Lending', desc: 'Loan origination and servicing.', icon: '📈', color: '#4299e1' }
+    { id: 'lending', title: 'Lending', desc: 'Loan origination and servicing.', icon: '📈', color: '#4299e1' },
+    { id: 'etd', title: 'Create App', desc: 'Create and design custom Electronic Transaction Documents.', icon: '📝', color: '#f56565' },
+    
+    // NEW MODULE: Version Designer (just like ETD)
+    {
+      id: 'version-designer',
+      title: 'Version Designer',
+      desc: 'Create and customize versions of core applications (Customer, Fund Transfer, etc.).',
+      icon: '🔧',
+      color: '#7c3aed'  // Vibrant purple – stands out nicely
+    }
   ], []);
 
   const handleModuleClick = (module) => {
-    // Navigate to MainApp with module as path param
-    navigate(`/mainapp/${module.id}`, { 
-      state: { module: module } // Optional: pass module data via state
-    });
+    if (module.id === 'etd') {
+      navigate('/mainapp/etd');
+    } else if (module.id === 'version-designer') {
+      navigate('/mainapp/version-designer');  // Matches your new route
+    } else {
+      // All other transactional modules go through MainApp
+      navigate(`/mainapp/${module.id}`, { 
+        state: { module: module } 
+      });
+    }
   };
 
   return (
@@ -29,7 +46,7 @@ const HomePage = () => {
         <div className="header-left">
           <div className="logo">
             <span className="logo-icon">1T</span>
-            <span className="logo-text">Transact Explorer</span>
+            <span className="logo-text">1 Technologies Ltd</span>
           </div>
         </div>
         <div className="header-right">
@@ -48,7 +65,7 @@ const HomePage = () => {
         {/* Hero Section */}
         <div className="hero-section">
           <div className="hero-content">
-            <h1>1Technologies Core Banking Applications</h1>
+            <h1>1 Technologies CBS</h1>
             <p>Select an application module to begin transaction processing</p>
           </div>
         </div>
@@ -56,8 +73,12 @@ const HomePage = () => {
         {/* Modules Grid */}
         <div className="modules-grid-section">
           <div className="section-header">
-            <h2>Application Modules</h2>
-            <p>Click on any module to proceed</p>
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px'}}>
+              <div>
+                <h2>Application Modules</h2>
+                <p>Click on any module to proceed</p>
+              </div>
+            </div>
           </div>
           <div className="modules-grid">   
             {MODULES.map(module => (
@@ -110,9 +131,9 @@ const HomePage = () => {
       <footer className="hp-footer">
         <div className="footer-content">
           <div className="footer-left">
-            <span>1Technologies Transact Explorer v2.1.0</span>
+            <span>1 Technologies Explorer v1.0.0</span>
             <span className="footer-separator">•</span>
-            <span>1Technologiesltd Core Banking System</span>
+            <span>1T Core Banking System</span>
           </div>
           <div className="footer-right">
             <span>Session: Active</span>

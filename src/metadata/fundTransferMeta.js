@@ -1,7 +1,7 @@
 const fundTransferMeta = {
-  "application": "payment",
+  "application": "FUND.TRANSFER",
   "type": "core",
-  "columns": 1,
+  "columns":2,
   "fields": {
     "transaction_type": {
       "field_name": "transaction_type",

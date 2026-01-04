@@ -346,6 +346,12 @@ body {
   user-select: none;
 }
 
+.required-asterisk {
+  color: #d32f2f;
+  margin-left: 6px;
+  font-weight: 700;
+}
+
 .t24-label.error {
   color: #d32f2f;
 }

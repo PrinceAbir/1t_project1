@@ -1,6 +1,6 @@
-﻿import React, { useState, useEffect, memo, useMemo } from 'react';
+﻿import React, { useState, useEffect, memo, useMemo, useRef } from 'react';
 import './FieldRenderer.css';
-
+import { loadDropdownOptions } from '../services/DropdownService';
 
 const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', readOnly = false }) => {
   const id = field?.id || field?.field_name || field?.fieldName || '';
@@ -16,14 +16,76 @@ const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', read
 
   const [dropdownOptions, setDropdownOptions] = useState(options || []);
   const [fileError, setFileError] = useState('');
+  const [minimized, setMinimized] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState(() => (Array.isArray(value) ? value.map(() => false) : []));
+
+  // Extract dropdown properties from field
+  const { dropdown, dropdownType, dropdownName } = field || {};
 
   useEffect(() => {
-    if (field?.dropdown && field?.dropdownType === 'dynamic') {
-      setDropdownOptions((o) => o);
-    } else {
+    // If field declares a dropdown source, prefer loading via DropdownService
+    try {
+      if (field && field.dropdown && field.dropdown.source) {
+        const mapped = loadDropdownOptions(field);
+        setDropdownOptions(mapped || []);
+        return;
+      }
+
+      // legacy/dynamic inline mapping fallback
+      if (dropdown && dropdownType === 'dynamic' && dropdownName) {
+        const dynamicData = {
+          ACCOUNT: ['Checking', 'Savings', 'Business'],
+          CURRENCY: ['USD', 'EUR', 'BDT'],
+          COUNTRY: ['Bangladesh', 'USA', 'UK'],
+          STATUS: ['Active', 'Inactive']
+        };
+        const dynamicOptions = dynamicData[dropdownName] || [];
+        setDropdownOptions(dynamicOptions.map(opt => ({ value: opt, label: opt })));
+        return;
+      }
+
+      setDropdownOptions(options || []);
+    } catch (e) {
+      console.debug('FieldRenderer: error loading dropdown options', e);
       setDropdownOptions(options || []);
     }
-  }, [field?.dropdown, field?.dropdownType, options]);
+  }, [field, dropdown, dropdownType, dropdownName, options]);
+
+  // Handle expand field events for group collapsing
+  useEffect(() => {
+    const handler = (ev) => {
+      const targetId = ev?.detail;
+      if (!targetId) return;
+
+      const baseId = `${tabId}_${id}`;
+      
+      // If group and the target references this group's index or child, open that group instance
+      if (type === 'group' && targetId.startsWith(baseId + '_')) {
+        const rest = targetId.slice((baseId + '_').length);
+        const parts = rest.split('_');
+        const firstIdx = parseInt(parts[0], 10);
+        if (!Number.isNaN(firstIdx)) {
+          setCollapsedGroups((prev) => {
+            const n = [...(prev || [])];
+            if (n[firstIdx] === true) n[firstIdx] = false;
+            return n;
+          });
+          return;
+        }
+        const lastIdx = parseInt(parts[parts.length - 1], 10);
+        if (!Number.isNaN(lastIdx)) {
+          setCollapsedGroups((prev) => {
+            const n = [...(prev || [])];
+            if (n[lastIdx] === true) n[lastIdx] = false;
+            return n;
+          });
+        }
+      }
+    };
+
+    document.addEventListener('expandField', handler);
+    return () => document.removeEventListener('expandField', handler);
+  }, [tabId, id, type, value]);
 
   const rawChildren = field.children || field.metadata?.children || field.fields || field.metadata?.fields || [];
   const children = Array.isArray(rawChildren)
@@ -65,6 +127,117 @@ const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', read
   };
 
   const handleGroupChildChange = (childId, childVal, groupIdx) => { if (readOnly) return; const groups = Array.isArray(value) ? [...value] : [value || {}]; groups[groupIdx] = { ...(groups[groupIdx] || {}), [childId]: childVal }; emitChange(groups); };
+
+  const toggleCollapse = (idx) => setCollapsedGroups(p => { const n = [...p]; n[idx] = !n[idx]; return n; });
+
+  // Custom Dropdown Component from 2nd code
+  const CustomDropdown = ({ options, value, onSelect }) => {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+    const [highlight, setHighlight] = useState(0);
+
+    useEffect(() => {
+      const close = (e) => ref.current && !ref.current.contains(e.target) && setOpen(false);
+      document.addEventListener('click', close);
+      return () => document.removeEventListener('click', close);
+    }, []);
+
+    const display = (() => {
+      if (value === undefined || value === null || value === '') return 'Select...';
+      const found = (options || []).find(o => (o.value ?? o) === value);
+      return (found && (found.label ?? found)) || value;
+    })();
+
+    const selectedOption = (options || []).find(o => (o.value ?? o) === value);
+
+    return (
+      <div className="custom-dropdown" ref={ref}>
+        <button
+          id={`${tabId}_${id}`}
+          data-alt-id={`${tabId}_${id}_toggle`}
+          type="button"
+          className={`t24-input custom-dropdown-toggle ${open ? 'open' : ''}`}
+          onClick={() => setOpen(!open)}
+          disabled={readOnly}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              setHighlight(h => Math.min(h + 1, (options || []).length - 1));
+              setOpen(true);
+            }
+            if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              setHighlight(h => Math.max(h - 1, 0));
+            }
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              const opt = (options || [])[highlight];
+              if (opt) { onSelect(opt.value ?? opt); setOpen(false); }
+            }
+          }}
+        >
+          <div style={{display:'flex',flexDirection:'column',alignItems:'flex-start'}}>
+            <span className="item-label">{selectedOption?.label ?? display}</span>
+            {selectedOption?.detail && <small className="item-detail">{selectedOption.detail}</small>}
+          </div>
+          <span className="caret">▾</span>
+        </button>
+        {open && (
+          <div className="custom-dropdown-menu">
+            {(() => {
+              const opts = options || [];
+              const firstRaw = opts.length ? opts[0].raw : null;
+              const isTable = firstRaw && typeof firstRaw === 'object' && !Array.isArray(firstRaw);
+
+              if (!isTable) {
+                return opts.map((o, i) => (
+                  <div
+                    key={i}
+                    className={`custom-dropdown-item ${i === highlight ? 'highlight' : ''}`}
+                    onMouseEnter={() => setHighlight(i)}
+                    onClick={() => { onSelect(o.value ?? o); setOpen(false); }}
+                    role="option"
+                    aria-selected={i === highlight}
+                  >
+                    <div className="item-label">{o.label ?? o}</div>
+                    {o.detail && <div className="item-detail">{o.detail}</div>}
+                  </div>
+                ));
+              }
+
+              // render as small table: headers from keys of raw object
+              const headers = Object.keys(firstRaw);
+              return (
+                <table className="dropdown-table">
+                  <thead>
+                    <tr>
+                      {headers.map(h => <th key={h}>{h}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {opts.map((o, i) => (
+                      <tr
+                        key={i}
+                        className={i === highlight ? 'highlight' : ''}
+                        onMouseEnter={() => setHighlight(i)}
+                        onClick={() => { onSelect(o.value ?? o); setOpen(false); }}
+                        role="option"
+                        aria-selected={i === highlight}
+                      >
+                        {headers.map(h => <td key={h}>{String((o.raw && o.raw[h]) ?? '')}</td>)}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              );
+            })()}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderMulti = () => {
     const arr = Array.isArray(value) ? value : [''];
@@ -112,6 +285,10 @@ const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', read
   const renderGroup = () => {
     const groups = Array.isArray(value) ? value : [value || {}];
     const errs = Array.isArray(error) ? error : [];
+    
+    // Render groups vertically (one group instance per block) rather than as a table
+
+    // Fallback to original group rendering
     return (
       <div className="group-fields-container">
         {groups.map((grp, gi) => (
@@ -162,7 +339,7 @@ const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', read
             )}
           </div>
         ))}
-        {!readOnly && groupMulti && (!maxMulti || groups.length < maxMulti) && (<button type="button" className="add-multi-field" onClick={addMulti}>+</button>)}
+        {!readOnly && groupMulti && (!maxMulti || groups.length < maxMulti) && (<button type="button" className="add-multi-field" onClick={addMulti}>+{label}</button>)}
       </div>
     );
   };
@@ -171,7 +348,18 @@ const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', read
   const typeNorm = (type || '').toLowerCase();
 
   const renderSingle = () => {
-    if (typeNorm === 'select' || typeNorm === 'account' || (dropdownOptions && dropdownOptions.length)) {
+    // Handle dropdown type with CustomDropdown component from 2nd code
+    if (typeNorm === 'dropdown' || (dropdown && dropdownOptions && dropdownOptions.length)) {
+      return (
+        <CustomDropdown
+          options={dropdownOptions.length ? dropdownOptions : options}
+          value={value}
+          onSelect={handleSingleChange}
+        />
+      );
+    }
+
+    if (typeNorm === 'select' || typeNorm === 'account' || (options && options.length)) {
       const opts = dropdownOptions && dropdownOptions.length ? dropdownOptions : options;
       return (
         <select id={`${tabId}_${id}`} value={value ?? ''} onChange={(e) => handleSingleChange(e.target.value)} required={required} disabled={readOnly} className={`t24-input ${singleError ? 'error' : ''}`}>
@@ -182,7 +370,22 @@ const FieldRenderer = ({ field = {}, value, onChange, error, tabId = 'tab', read
     }
 
     if (typeNorm === 'textarea') {
-      return (<textarea id={`${tabId}_${id}`} value={value ?? ''} onChange={(e) => handleSingleChange(e.target.value)} className={`t24-input ${singleError ? 'error' : ''}`} disabled={readOnly} rows={4} />);
+      const fieldElemId = `${tabId}_${id}`;
+      if (minimized) {
+        return (
+          <div className="field-minimized-row">
+            <div className="field-minimized-preview">{String(value ?? '').slice(0, 80) || 'Empty'}</div>
+            <button className="minimize-field-btn" onClick={() => setMinimized(false)} aria-label="Expand field">▴</button>
+          </div>
+        );
+      }
+
+      return (
+        <div style={{position:'relative', display:'flex', alignItems:'center'}}>
+          <textarea id={fieldElemId} className={`t24-input ${singleError ? 'error' : ''}`} value={value ?? ''} onChange={(e) => handleSingleChange(e.target.value)} disabled={readOnly} rows={4} />
+          <button className="minimize-field-btn" onClick={() => setMinimized(true)} aria-label="Minimize field">−</button>
+        </div>
+      );
     }
 
     if (['int', 'integer', 'number', 'double', 'amount', 'float'].includes(typeNorm)) {

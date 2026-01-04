@@ -125,6 +125,13 @@ const T24TransactExplorer = ({ module, mode = "create" }) => {
     setToastButton(btnText ? { text: btnText, action: btnAction } : null);
     setShowToast(true);
   }, []);
+  // update columns if metadata changes (keeps dynamic behavior)
+  useEffect(() => {
+    if (metadata && metadata.columns) {
+      const c = Number(metadata.columns) || 1;
+      if (c > 0 && c !== columns) setColumns(c);
+    }
+  }, [metadata, columns]);
 
   const handleBackToHome = () => {
     window.location.href = "/";
@@ -301,6 +308,8 @@ const T24TransactExplorer = ({ module, mode = "create" }) => {
       </div>
     );
   }
+
+  if (!metadata) return <div>No metadata for module: {module}</div>;
 
   const currentTab = t24FormData[activeTab];
   const currentData = formState[activeTab] || {};
