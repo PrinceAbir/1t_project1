@@ -12,7 +12,7 @@ import FieldRenderer from "./FieldRenderer";
 import ValidationService from "../services/ValidationService";
 import DataTransformer from "../services/DataTransformer";
 import ErrorToast from "./ErrorToast";
-import "../App.css";
+import "../style/T24TransactExplorer.css";
 
 const API_BASE = "http://localhost:5000/api/metadata";
 

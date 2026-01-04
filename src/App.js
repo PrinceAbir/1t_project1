@@ -1,12 +1,12 @@
 import React, { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "./App.css";
-import MetadataPage from "./components/MetadataPage";
 
-import MetadataAddOnlyPage from "./components/MetadataAddOnlyPage";
 
 const HomePage = lazy(() => import("./components/Homepage"));
 const MainApp = lazy(() => import("./components/MainApp"));
+const MetadataPage= lazy(() => import("./components/MetadataPage"));
+const MetadataAddOnlyPage= lazy(() => import("./components/MetadataAddOnlyPage"));
 
 function App() {
   return (
@@ -16,7 +16,6 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/mainapp/:module" element={<MainApp />} />{" "}
-            {/* Updated to path param */}
             <Route path="/metadata/:module" element={<MetadataPage />} />
             <Route
               path="/metadata-add/:module"

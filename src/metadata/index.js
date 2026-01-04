@@ -1,4 +1,3 @@
-// src/metadata/META_MAP.js (unchanged, but can add more modules for future flexibility)
 import fundTransferMeta from "./fundTransferMeta";
 import customerMeta from "./customerMetaData";
 
