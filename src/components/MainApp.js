@@ -183,7 +183,7 @@ const MainApp = () => {
             ← Home
           </button>
           <div className="app-info">
-            <span className="app-icon">{getModuleIcon()}</span>
+         
             <span className="app-name">
               {getModuleName().toUpperCase()} APPLICATION
             </span>

@@ -9,10 +9,6 @@ const MetadataPage= lazy(() => import("./components/MetadataPage"));
 const MetadataAddOnlyPage= lazy(() => import("./components/MetadataAddOnlyPage"));
 
 
-let Router = ({ children }) => <>{children}</>;
-let Routes = ({ children }) => <>{children}</>;
-let Route = ({ element }) => element;
-
 try {
   const rr = require('react-router-dom');
   Router = rr.BrowserRouter || rr.Router || Router;
@@ -22,7 +18,6 @@ try {
   // ignore
 }
 
-const MetaBuilder = lazy(() => import('./components/MetaBuilder'));
 const ETDDesigner = lazy(() => import('./ETD/ETDDesigner'));
 const VersionDesignerHome = lazy(() => import('./version/VersionDesignerHome'));
 const VersionDesignerWorkspace = lazy(() => import('./version/VersionDesignerWorkspace'));
@@ -51,8 +46,7 @@ function App() {
                 </div>
               }
             />{" "}
-            {/* Edge case: 404 */}
-            <Route path="/meta-builder" element={<MetaBuilder />} />
+          
 
             {/* Version Designer Routes - Support both patterns */}
             {/* Pattern 1: Without /mainapp/ prefix */}
