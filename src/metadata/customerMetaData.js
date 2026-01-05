@@ -6,7 +6,7 @@ const customerMetaData = {
     "customer.name.1": {
       "field_name": "customer_name_1",
       "label": "Customer Name 1",
-      "type": "dropdown",
+      "type": "alphaneumeric",
       "multivalued": true,
       "mandatory": true,
       "min_length": 2,

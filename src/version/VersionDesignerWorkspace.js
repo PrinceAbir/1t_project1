@@ -1,12 +1,13 @@
 // src/components/version/VersionDesignerWorkspace.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import ActionButtons from '../components/ActionButtons'; // Import the ActionButtons component
 import './VersionDesignerWorkspace.css';
 
 const VersionDesignerWorkspace = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   // Extract data from navigation state
   const { application, version, coreFields, appInput } = location.state || {};
 
@@ -71,6 +72,9 @@ const VersionDesignerWorkspace = () => {
     authorizer: ''
   });
 
+  // Loading state for commit
+  const [isCommitting, setIsCommitting] = useState(false);
+
   // Available fields for selection
   const availableFields = useMemo(() => {
     if (!coreFields) return [];
@@ -87,10 +91,123 @@ const VersionDesignerWorkspace = () => {
     navigate('/version-designer');
   };
 
+  // Handle commit button click
+  const handleCommit = async () => {
+    setIsCommitting(true);
+    try {
+      // Prepare the version data
+      const versionData = {
+        application,
+        version,
+        appInput,
+        description,
+        language,
+        noOfAuth,
+        isPrintOnly,
+        fields: selectedFields,
+        dropDowns,
+        autoDefaults,
+        fieldProperties,
+        apiHooks,
+        otherDetails,
+        service,
+        audit,
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      };
+      
+      // Log the data being sent (for debugging)
+      console.log('Committing version data:', JSON.stringify(versionData, null, 2));
+      
+      // Make POST request to the API
+      const response = await fetch('http://localhost:5000/api/applications/version', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(versionData),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Commit successful:', result);
+      
+      alert(`Version "${version}" for "${application}" committed successfully!`);
+      
+    } catch (error) {
+      console.error('Error committing version:', error);
+      alert(`Failed to commit version: ${error.message}`);
+    } finally {
+      setIsCommitting(false);
+    }
+  };
+
+  // Handle hold button click
+  const handleHold = () => {
+    // For now, just show a message
+    alert('Hold functionality - This would save the current state as a draft');
+    
+    // You can implement actual hold/draft saving logic here
+    const draftData = {
+      application,
+      version,
+      appInput,
+      description,
+      language,
+      noOfAuth,
+      isPrintOnly,
+      fields: selectedFields,
+      dropDowns,
+      autoDefaults,
+      fieldProperties,
+      apiHooks,
+      otherDetails,
+      service,
+      audit,
+      savedAt: new Date().toISOString(),
+      status: 'draft'
+    };
+    
+    console.log('Hold (Save Draft):', JSON.stringify(draftData, null, 2));
+  };
+
+  // Handle validate button click
+  const handleValidate = () => {
+    const errors = [];
+    
+    // Validation checks
+    if (!description.trim()) {
+      errors.push('Description is required');
+    }
+    
+    if (Object.keys(selectedFields).length === 0) {
+      errors.push('At least one field must be selected');
+    }
+    
+    // Check if any dropdown fields have dropdown source configured
+    const dropdownFields = Object.entries(selectedFields)
+      .filter(([_, field]) => field.displayType === 'Dropdown');
+    
+    dropdownFields.forEach(([key, field]) => {
+      if (!field.dropdownSource) {
+        errors.push(`Field "${field.label || key}" is set as Dropdown but no dropdown source is selected`);
+      }
+    });
+    
+    if (errors.length > 0) {
+      alert('Validation Errors:\n\n' + errors.join('\n'));
+    } else {
+      alert('Validation successful! All required configurations are in place.');
+    }
+  };
+
   // Handle multi-select field addition
   const handleAddFields = (keys) => {
     if (!keys || keys.length === 0) return;
-    
+
     const newFields = {};
     keys.forEach(key => {
       if (!selectedFields[key] && coreFields[key]) {
@@ -102,6 +219,7 @@ const VersionDesignerWorkspace = () => {
           text: '',
           attribute: '',
           displayType: 'Text',
+          dropdownSource: '', // Add dropdownSource property
           toolTip: '',
           enrich: false,
           mandatory: coreField.mandatory || false,
@@ -110,7 +228,7 @@ const VersionDesignerWorkspace = () => {
         };
       }
     });
-    
+
     setSelectedFields(prev => ({ ...prev, ...newFields }));
     setSelectedFieldKeys(prev => [...prev, ...keys.filter(k => !prev.includes(k))]);
   };
@@ -118,7 +236,7 @@ const VersionDesignerWorkspace = () => {
   // Handle single field addition
   const addField = (key) => {
     if (!key || selectedFields[key]) return;
-    
+
     const coreField = coreFields[key];
     const newField = {
       ...coreField,
@@ -127,13 +245,14 @@ const VersionDesignerWorkspace = () => {
       text: '',
       attribute: '',
       displayType: 'Text',
+      dropdownSource: '', // Add dropdownSource property
       toolTip: '',
       enrich: false,
       mandatory: coreField.mandatory || false,
       min_length: coreField.min_length,
       max_length: coreField.max_length
     };
-    
+
     setSelectedFields(prev => ({ ...prev, [key]: newField }));
     setSelectedFieldKeys(prev => [...prev, key]);
   };
@@ -144,7 +263,7 @@ const VersionDesignerWorkspace = () => {
       alert('Please select fields from the dropdown');
       return;
     }
-    
+
     handleAddFields(selectedDropdownOptions);
     setSelectedDropdownOptions([]);
   };
@@ -159,13 +278,21 @@ const VersionDesignerWorkspace = () => {
   };
 
   const updateFieldProperty = (key, property, value) => {
-    setSelectedFields(prev => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        [property]: value
+    setSelectedFields(prev => {
+      const updatedField = { ...prev[key] };
+      
+      if (property === 'displayType' && value !== 'Dropdown') {
+        // Clear dropdown source if changing from Dropdown to another type
+        updatedField.dropdownSource = '';
       }
-    }));
+      
+      updatedField[property] = value;
+      
+      return {
+        ...prev,
+        [key]: updatedField
+      };
+    });
   };
 
   // Handle dropdown selection changes
@@ -205,7 +332,7 @@ const VersionDesignerWorkspace = () => {
       'number': 'text-bg-orange',
       'boolean': 'text-bg-red'
     };
-    
+
     const colorClass = typeColors[type] || 'text-bg-gray';
     return (
       <span className={`field-type-badge ${colorClass}`}>
@@ -214,15 +341,17 @@ const VersionDesignerWorkspace = () => {
     );
   };
 
-  // Tab components
+  // Tab components (keep all the existing tab render functions exactly as they were)
+  // ... [All the tab render functions remain exactly the same] ...
+
   const renderFieldDefinitions = () => (
     <div className="tab-content">
       {/* Print Only */}
       <div className="section">
         <div className="checkbox-group">
           <label className="checkbox-label">
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               checked={isPrintOnly}
               onChange={(e) => setIsPrintOnly(e.target.checked)}
             />
@@ -234,7 +363,7 @@ const VersionDesignerWorkspace = () => {
       {/* Description */}
       <div className="section">
         <h3 className="section-title">Description</h3>
-        <textarea 
+        <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows="3"
@@ -247,8 +376,8 @@ const VersionDesignerWorkspace = () => {
       <div className="form-row">
         <div className="form-group">
           <label className="form-label">Language 1</label>
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
             className="form-input small-input"
@@ -256,8 +385,8 @@ const VersionDesignerWorkspace = () => {
         </div>
         <div className="form-group">
           <label className="form-label">No. of Auth</label>
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={noOfAuth}
             onChange={(e) => setNoOfAuth(e.target.value)}
             placeholder="Enter number"
@@ -288,14 +417,14 @@ const VersionDesignerWorkspace = () => {
               <span>Select Multiple Fields</span>
             </div>
             <div className="multi-select-actions">
-              <button 
+              <button
                 onClick={handleSelectAllAvailable}
                 className="btn-secondary btn-small"
                 disabled={availableFields.length === 0}
               >
                 Select All
               </button>
-              <button 
+              <button
                 onClick={handleClearDropdownSelection}
                 className="btn-secondary btn-small"
                 disabled={selectedDropdownOptions.length === 0}
@@ -304,7 +433,7 @@ const VersionDesignerWorkspace = () => {
               </button>
             </div>
           </div>
-          
+
           <div className="multi-select-dropdown">
             <div className="dropdown-list">
               {availableFields.length === 0 ? (
@@ -316,15 +445,15 @@ const VersionDesignerWorkspace = () => {
                 availableFields.map(key => {
                   const field = getFieldDetails(key);
                   if (!field) return null;
-                  
+
                   return (
-                    <div 
+                    <div
                       key={key}
                       className={`dropdown-option ${selectedDropdownOptions.includes(key) ? 'selected' : ''}`}
                       onClick={() => handleDropdownOptionToggle(key)}
                     >
                       <div className="option-checkbox">
-                        <input 
+                        <input
                           type="checkbox"
                           checked={selectedDropdownOptions.includes(key)}
                           onChange={() => handleDropdownOptionToggle(key)}
@@ -356,7 +485,7 @@ const VersionDesignerWorkspace = () => {
                 {selectedDropdownOptions.length} field{selectedDropdownOptions.length !== 1 ? 's' : ''} selected
               </span>
             </div>
-            <button 
+            <button
               onClick={handleBatchAddFields}
               className="btn-primary"
               disabled={selectedDropdownOptions.length === 0}
@@ -384,7 +513,7 @@ const VersionDesignerWorkspace = () => {
                 </option>
               ))}
             </select>
-            <button 
+            <button
               onClick={() => {
                 const select = document.querySelector('.field-select-dropdown');
                 if (select.value) addField(select.value);
@@ -442,7 +571,7 @@ const VersionDesignerWorkspace = () => {
                           </div>
                         </td>
                         <td>
-                          <input 
+                          <input
                             type="text"
                             value={field.label || ''}
                             onChange={(e) => updateFieldProperty(key, 'label', e.target.value)}
@@ -456,7 +585,7 @@ const VersionDesignerWorkspace = () => {
                           </div>
                         </td>
                         <td>
-                          <input 
+                          <input
                             type="text"
                             value={field.column || ''}
                             onChange={(e) => updateFieldProperty(key, 'column', e.target.value)}
@@ -465,7 +594,7 @@ const VersionDesignerWorkspace = () => {
                           />
                         </td>
                         <td>
-                          <input 
+                          <input
                             type="text"
                             value={field.textMax || ''}
                             onChange={(e) => updateFieldProperty(key, 'textMax', e.target.value)}
@@ -474,7 +603,7 @@ const VersionDesignerWorkspace = () => {
                           />
                         </td>
                         <td>
-                          <select 
+                          <select
                             value={field.displayType || 'Text'}
                             onChange={(e) => updateFieldProperty(key, 'displayType', e.target.value)}
                             className="table-select"
@@ -485,9 +614,28 @@ const VersionDesignerWorkspace = () => {
                             <option value="Number">Number</option>
                             <option value="Checkbox">Checkbox</option>
                           </select>
+
+                          {/* Add dropdown selection when display type is Dropdown */}
+                          {field.displayType === 'Dropdown' && (
+                            <select
+                              value={field.dropdownSource || ''}
+                              onChange={(e) => updateFieldProperty(key, 'dropdownSource', e.target.value)}
+                              className="table-select dropdown-source-select"
+                              style={{ marginTop: '5px', width: '100%' }}
+                            >
+                              <option value="">Select a dropdown...</option>
+                              <option value="sector">Sector</option>
+                              <option value="industry">Industry</option>
+                              <option value="nationality">Nationality</option>
+                              <option value="customerStatus">Customer Status</option>
+                              <option value="residence">Residence</option>
+                              <option value="accountOfficer">Account Officer</option>
+                              <option value="otherOfficer1">Other Officer 1</option>
+                            </select>
+                          )}
                         </td>
                         <td>
-                          <input 
+                          <input
                             type="text"
                             value={field.toolTip || ''}
                             onChange={(e) => updateFieldProperty(key, 'toolTip', e.target.value)}
@@ -497,7 +645,7 @@ const VersionDesignerWorkspace = () => {
                         </td>
                         <td className="enrich-cell">
                           <label className="checkbox-inline">
-                            <input 
+                            <input
                               type="checkbox"
                               checked={field.enrich || false}
                               onChange={(e) => updateFieldProperty(key, 'enrich', e.target.checked)}
@@ -507,7 +655,7 @@ const VersionDesignerWorkspace = () => {
                           </label>
                         </td>
                         <td className="actions-cell">
-                          <button 
+                          <button
                             onClick={() => removeField(key)}
                             className="btn-danger btn-small"
                             title="Remove field"
@@ -527,6 +675,8 @@ const VersionDesignerWorkspace = () => {
     </div>
   );
 
+  // ... [All other tab render functions remain exactly as they were in your original code] ...
+
   const renderDropDown = () => (
     <div className="tab-content">
       <div className="section">
@@ -534,7 +684,7 @@ const VersionDesignerWorkspace = () => {
         <p className="section-description">
           Configure dropdown fields for this version. Each row defines a dropdown field, its source, and selection criteria.
         </p>
-        
+
         <div className="table-controls">
           <button
             onClick={() => setDropDowns([...dropDowns, { fieldName: '', dropDown: '', selection: '' }])}
@@ -544,7 +694,7 @@ const VersionDesignerWorkspace = () => {
             Add Dropdown Configuration
           </button>
         </div>
-        
+
         {dropDowns.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">📋</div>
@@ -630,7 +780,7 @@ const VersionDesignerWorkspace = () => {
         <p className="section-description">
           Configure automatic field defaults. When a field matches the "Replaces" value, it will be auto-filled with the "Default Value".
         </p>
-        
+
         <div className="table-controls">
           <button
             onClick={() => setAutoDefaults([...autoDefaults, { fieldToDefault: '', defaultValue: '', replaces: '' }])}
@@ -640,7 +790,7 @@ const VersionDesignerWorkspace = () => {
             Add Default Rule
           </button>
         </div>
-        
+
         {autoDefaults.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">⚡</div>
@@ -726,13 +876,13 @@ const VersionDesignerWorkspace = () => {
         <p className="section-description">
           Configure global field properties that apply to all fields in this version.
         </p>
-        
+
         <div className="field-properties-grid">
           <label className="property-checkbox">
-            <input 
+            <input
               type="checkbox"
               checked={fieldProperties.rightAdjust}
-              onChange={(e) => setFieldProperties({...fieldProperties, rightAdjust: e.target.checked})}
+              onChange={(e) => setFieldProperties({ ...fieldProperties, rightAdjust: e.target.checked })}
               className="checkbox-input"
             />
             <div className="property-content">
@@ -740,12 +890,12 @@ const VersionDesignerWorkspace = () => {
               <span className="property-description">Align text to the right</span>
             </div>
           </label>
-          
+
           <label className="property-checkbox">
-            <input 
+            <input
               type="checkbox"
               checked={fieldProperties.noInput}
-              onChange={(e) => setFieldProperties({...fieldProperties, noInput: e.target.checked})}
+              onChange={(e) => setFieldProperties({ ...fieldProperties, noInput: e.target.checked })}
               className="checkbox-input"
             />
             <div className="property-content">
@@ -753,12 +903,12 @@ const VersionDesignerWorkspace = () => {
               <span className="property-description">Field cannot receive input</span>
             </div>
           </label>
-          
+
           <label className="property-checkbox">
-            <input 
+            <input
               type="checkbox"
               checked={fieldProperties.noChange}
-              onChange={(e) => setFieldProperties({...fieldProperties, noChange: e.target.checked})}
+              onChange={(e) => setFieldProperties({ ...fieldProperties, noChange: e.target.checked })}
               className="checkbox-input"
             />
             <div className="property-content">
@@ -766,12 +916,12 @@ const VersionDesignerWorkspace = () => {
               <span className="property-description">Field value cannot be changed</span>
             </div>
           </label>
-          
+
           <label className="property-checkbox">
-            <input 
+            <input
               type="checkbox"
               checked={fieldProperties.reKey}
-              onChange={(e) => setFieldProperties({...fieldProperties, reKey: e.target.checked})}
+              onChange={(e) => setFieldProperties({ ...fieldProperties, reKey: e.target.checked })}
               className="checkbox-input"
             />
             <div className="property-content">
@@ -792,16 +942,16 @@ const VersionDesignerWorkspace = () => {
           <span className="api-note-icon">⚠️</span>
           <strong>Note:</strong> All API Routines will be invoked before JOURNAL_UPDATE
         </p>
-        
+
         <div className="api-hooks-grid">
           <div className="api-hook">
             <div className="api-hook-header">
               <label className="api-hook-label">Check ID</label>
               <div className="api-hook-actions">
-                <button className="btn-icon" onClick={() => setApiHooks({...apiHooks, checkId: apiHooks.checkId + '1'})}>
+                <button className="btn-icon" onClick={() => setApiHooks({ ...apiHooks, checkId: apiHooks.checkId + '1' })}>
                   <span className="icon-plus">+</span>
                 </button>
-                <button className="btn-icon" onClick={() => setApiHooks({...apiHooks, checkId: ''})}>
+                <button className="btn-icon" onClick={() => setApiHooks({ ...apiHooks, checkId: '' })}>
                   <span className="icon-minus">-</span>
                 </button>
               </div>
@@ -809,20 +959,20 @@ const VersionDesignerWorkspace = () => {
             <input
               type="text"
               value={apiHooks.checkId}
-              onChange={(e) => setApiHooks({...apiHooks, checkId: e.target.value})}
+              onChange={(e) => setApiHooks({ ...apiHooks, checkId: e.target.value })}
               placeholder="Check ID routine"
               className="api-hook-input"
             />
           </div>
-          
+
           <div className="api-hook">
             <div className="api-hook-header">
               <label className="api-hook-label">Check Record</label>
               <div className="api-hook-actions">
-                <button className="btn-icon" onClick={() => setApiHooks({...apiHooks, checkRecord: apiHooks.checkRecord + '1'})}>
+                <button className="btn-icon" onClick={() => setApiHooks({ ...apiHooks, checkRecord: apiHooks.checkRecord + '1' })}>
                   <span className="icon-plus">+</span>
                 </button>
-                <button className="btn-icon" onClick={() => setApiHooks({...apiHooks, checkRecord: ''})}>
+                <button className="btn-icon" onClick={() => setApiHooks({ ...apiHooks, checkRecord: '' })}>
                   <span className="icon-minus">-</span>
                 </button>
               </div>
@@ -830,20 +980,20 @@ const VersionDesignerWorkspace = () => {
             <input
               type="text"
               value={apiHooks.checkRecord}
-              onChange={(e) => setApiHooks({...apiHooks, checkRecord: e.target.value})}
+              onChange={(e) => setApiHooks({ ...apiHooks, checkRecord: e.target.value })}
               placeholder="Check Record routine"
               className="api-hook-input"
             />
           </div>
-          
+
           <div className="api-hook">
             <div className="api-hook-header">
               <label className="api-hook-label">Before Unauth</label>
               <div className="api-hook-actions">
-                <button className="btn-icon" onClick={() => setApiHooks({...apiHooks, beforeUnauth: apiHooks.beforeUnauth + '1'})}>
+                <button className="btn-icon" onClick={() => setApiHooks({ ...apiHooks, beforeUnauth: apiHooks.beforeUnauth + '1' })}>
                   <span className="icon-plus">+</span>
                 </button>
-                <button className="btn-icon" onClick={() => setApiHooks({...apiHooks, beforeUnauth: ''})}>
+                <button className="btn-icon" onClick={() => setApiHooks({ ...apiHooks, beforeUnauth: '' })}>
                   <span className="icon-minus">-</span>
                 </button>
               </div>
@@ -851,20 +1001,20 @@ const VersionDesignerWorkspace = () => {
             <input
               type="text"
               value={apiHooks.beforeUnauth}
-              onChange={(e) => setApiHooks({...apiHooks, beforeUnauth: e.target.value})}
+              onChange={(e) => setApiHooks({ ...apiHooks, beforeUnauth: e.target.value })}
               placeholder="Before Unauth routine"
               className="api-hook-input"
             />
           </div>
-          
+
           <div className="api-hook">
             <div className="api-hook-header">
               <label className="api-hook-label">After Unauth</label>
               <div className="api-hook-actions">
-                <button className="btn-icon" onClick={() => setApiHooks({...apiHooks, afterUnauth: apiHooks.afterUnauth + '1'})}>
+                <button className="btn-icon" onClick={() => setApiHooks({ ...apiHooks, afterUnauth: apiHooks.afterUnauth + '1' })}>
                   <span className="icon-plus">+</span>
                 </button>
-                <button className="btn-icon" onClick={() => setApiHooks({...apiHooks, afterUnauth: ''})}>
+                <button className="btn-icon" onClick={() => setApiHooks({ ...apiHooks, afterUnauth: '' })}>
                   <span className="icon-minus">-</span>
                 </button>
               </div>
@@ -872,7 +1022,7 @@ const VersionDesignerWorkspace = () => {
             <input
               type="text"
               value={apiHooks.afterUnauth}
-              onChange={(e) => setApiHooks({...apiHooks, afterUnauth: e.target.value})}
+              onChange={(e) => setApiHooks({ ...apiHooks, afterUnauth: e.target.value })}
               placeholder="After Unauth routine"
               className="api-hook-input"
             />
@@ -889,24 +1039,24 @@ const VersionDesignerWorkspace = () => {
         <p className="section-description">
           Configure version relationships and navigation settings.
         </p>
-        
+
         <div className="form-grid">
           <div className="form-group">
             <label className="form-label">Associated Version</label>
             <input
               type="text"
               value={otherDetails.associatedVersion}
-              onChange={(e) => setOtherDetails({...otherDetails, associatedVersion: e.target.value})}
+              onChange={(e) => setOtherDetails({ ...otherDetails, associatedVersion: e.target.value })}
               placeholder="Associated version name"
               className="form-input"
             />
           </div>
-          
+
           <div className="form-group">
             <label className="form-label">Next Version</label>
             <select
               value={otherDetails.nextVersion}
-              onChange={(e) => setOtherDetails({...otherDetails, nextVersion: e.target.value})}
+              onChange={(e) => setOtherDetails({ ...otherDetails, nextVersion: e.target.value })}
               className="form-select"
             >
               <option value="">Select next version</option>
@@ -915,12 +1065,12 @@ const VersionDesignerWorkspace = () => {
               <option value="next3">Next Version 3</option>
             </select>
           </div>
-          
+
           <div className="form-group">
             <label className="form-label">Confirm Version</label>
             <select
               value={otherDetails.confirmVersion}
-              onChange={(e) => setOtherDetails({...otherDetails, confirmVersion: e.target.value})}
+              onChange={(e) => setOtherDetails({ ...otherDetails, confirmVersion: e.target.value })}
               className="form-select"
             >
               <option value="">Select confirm version</option>
@@ -929,12 +1079,12 @@ const VersionDesignerWorkspace = () => {
               <option value="confirm3">Confirm Version 3</option>
             </select>
           </div>
-          
+
           <div className="form-group">
             <label className="form-label">Preview Version</label>
             <select
               value={otherDetails.previewVersion}
-              onChange={(e) => setOtherDetails({...otherDetails, previewVersion: e.target.value})}
+              onChange={(e) => setOtherDetails({ ...otherDetails, previewVersion: e.target.value })}
               className="form-select"
             >
               <option value="">Select preview version</option>
@@ -955,13 +1105,13 @@ const VersionDesignerWorkspace = () => {
         <p className="section-description">
           Configure service exposure settings for this version.
         </p>
-        
+
         <div className="service-configuration">
           <label className="service-checkbox">
-            <input 
+            <input
               type="checkbox"
               checked={service.exposeAsService}
-              onChange={(e) => setService({...service, exposeAsService: e.target.checked})}
+              onChange={(e) => setService({ ...service, exposeAsService: e.target.checked })}
               className="checkbox-input"
             />
             <div className="service-content">
@@ -971,7 +1121,7 @@ const VersionDesignerWorkspace = () => {
               </span>
             </div>
           </label>
-          
+
           {service.exposeAsService && (
             <div className="service-fields">
               <div className="form-row">
@@ -980,18 +1130,18 @@ const VersionDesignerWorkspace = () => {
                   <input
                     type="text"
                     value={service.serviceName}
-                    onChange={(e) => setService({...service, serviceName: e.target.value})}
+                    onChange={(e) => setService({ ...service, serviceName: e.target.value })}
                     placeholder="Service name"
                     className="form-input"
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label className="form-label">Activity Name</label>
                   <input
                     type="text"
                     value={service.activityName}
-                    onChange={(e) => setService({...service, activityName: e.target.value})}
+                    onChange={(e) => setService({ ...service, activityName: e.target.value })}
                     placeholder="Activity name"
                     className="form-input"
                   />
@@ -1011,47 +1161,47 @@ const VersionDesignerWorkspace = () => {
         <p className="section-description">
           Configure audit trail settings for this version.
         </p>
-        
+
         <div className="form-grid">
           <div className="form-group">
             <label className="form-label">Record Status</label>
             <input
               type="text"
               value={audit.recordStatus}
-              onChange={(e) => setAudit({...audit, recordStatus: e.target.value})}
+              onChange={(e) => setAudit({ ...audit, recordStatus: e.target.value })}
               placeholder="Record status"
               className="form-input"
             />
           </div>
-          
+
           <div className="form-group">
             <label className="form-label">Current No</label>
             <input
               type="text"
               value={audit.currentNo}
-              onChange={(e) => setAudit({...audit, currentNo: e.target.value})}
+              onChange={(e) => setAudit({ ...audit, currentNo: e.target.value })}
               placeholder="Current number"
               className="form-input"
             />
           </div>
-          
+
           <div className="form-group">
             <label className="form-label">Inputter</label>
             <input
               type="text"
               value={audit.inputter}
-              onChange={(e) => setAudit({...audit, inputter: e.target.value})}
+              onChange={(e) => setAudit({ ...audit, inputter: e.target.value })}
               placeholder="Inputter ID"
               className="form-input"
             />
           </div>
-          
+
           <div className="form-group">
             <label className="form-label">Authorizer</label>
             <input
               type="text"
               value={audit.authorizer}
-              onChange={(e) => setAudit({...audit, authorizer: e.target.value})}
+              onChange={(e) => setAudit({ ...audit, authorizer: e.target.value })}
               placeholder="Authorizer ID"
               className="form-input"
             />
@@ -1080,7 +1230,7 @@ const VersionDesignerWorkspace = () => {
       audit,
       createdAt: new Date().toISOString()
     };
-    
+
     console.log('VERSION SAVED:', JSON.stringify(versionData, null, 2));
     alert(`Version "${version}" for "${application}" saved successfully! Check console.`);
   };
@@ -1130,9 +1280,21 @@ const VersionDesignerWorkspace = () => {
       {/* Header */}
       <div className="workspace-header">
         <div className="header-content">
+          {/* Action Buttons - Placed ABOVE the version title */}
+          <div className="action-buttons-container">
+            <ActionButtons
+              onBack={handleBack}
+              onHold={handleHold}
+              onValidate={handleValidate}
+              onCommit={handleCommit}
+              disabled={isCommitting}
+            />
+          </div>
+          
           <h2 className="workspace-title">
             Version Designer / {application},{version}
           </h2>
+          
           <div className="version-info">
             <span className="info-item">
               <span className="info-label">Fields:</span>
@@ -1170,6 +1332,7 @@ const VersionDesignerWorkspace = () => {
           <button
             onClick={saveVersion}
             className="save-button"
+            disabled={isCommitting}
           >
             <span className="save-icon">💾</span>
             Save Version Configuration
