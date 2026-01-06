@@ -704,72 +704,103 @@ const MetadataPage = () => {
                 </button>
               </div>
 
-              {groupChildren.length === 0 ? (
-                <div
-                  style={{
-                    textAlign: "center",
-                    padding: "20px",
-                    color: "#666",
-                  }}
-                >
-                  No child fields. Add one above.
-                </div>
-              ) : (
-                groupChildren.map((child, idx) => (
-                  <div key={idx} className="group-child-row">
-                    <input
-                      placeholder="Field Name"
-                      value={child.field_name || ""}
-                      onChange={(e) =>
-                        updateGroupChild(idx, "field_name", e.target.value)
+              {groupChildren.map((child, idx) => (
+                <div key={idx} className="group-child-row">
+                  {/* Field Name */}
+                  <input
+                    placeholder="Field Name"
+                    value={child.field_name || ""}
+                    onChange={(e) =>
+                      updateGroupChild(idx, "field_name", e.target.value)
+                    }
+                    style={{ minWidth: "120px" }}
+                  />
+
+                  {/* Label */}
+                  <input
+                    placeholder="Label"
+                    value={child.label || ""}
+                    onChange={(e) =>
+                      updateGroupChild(idx, "label", e.target.value)
+                    }
+                    style={{ minWidth: "140px" }}
+                  />
+
+                  {/* Type */}
+                  <select
+                    value={child.type || "string"}
+                    onChange={(e) =>
+                      updateGroupChild(idx, "type", e.target.value)
+                    }
+                    style={{ minWidth: "100px" }}
+                  >
+                    <option value="string">string</option>
+                    <option value="int">int</option>
+                    <option value="amount">amount</option>
+                    <option value="date">date</option>
+                    <option value="tel">tel</option>
+                    <option value="email">email</option>
+                    <option value="textarea">textarea</option>
+                    <option value="file">file</option>
+                  </select>
+
+                  {/* Mandatory */}
+                  <div className="checkbox-group">
+                    <span
+                      className={`checkbox-icon ${
+                        child.mandatory ? "yes" : "no"
+                      }`}
+                      onClick={() =>
+                        updateGroupChild(idx, "mandatory", !child.mandatory)
                       }
-                      style={{ minWidth: "120px" }}
-                    />
-                    <input
-                      placeholder="Label"
-                      value={child.label || ""}
-                      onChange={(e) =>
-                        updateGroupChild(idx, "label", e.target.value)
-                      }
-                      style={{ minWidth: "140px" }}
-                    />
-                    <select
-                      value={child.type || "string"}
-                      onChange={(e) =>
-                        updateGroupChild(idx, "type", e.target.value)
-                      }
-                      style={{ minWidth: "100px" }}
                     >
-                      <option value="string">string</option>
-                      <option value="int">int</option>
-                      <option value="amount">amount</option>
-                      <option value="date">date</option>
-                      <option value="tel">tel</option>
-                      <option value="email">email</option>
-                    </select>
-                    <div className="checkbox-group">
-                      <span
-                        className={`checkbox-icon ${
-                          child.mandatory ? "yes" : "no"
-                        }`}
-                        onClick={() =>
-                          updateGroupChild(idx, "mandatory", !child.mandatory)
-                        }
-                      >
-                        {child.mandatory ? "✓" : "−"}
-                      </span>
-                      <span>Mandatory</span>
-                    </div>
-                    <button
-                      className="icon-btn delete-icon"
-                      onClick={() => deleteGroupChild(idx)}
-                      title="Delete Child Field"
-                    >
-                      🗑️
-                    </button>
+                      {child.mandatory ? "✓" : "−"}
+                    </span>
+                    <span>Mandatory</span>
                   </div>
-                ))
-              )}
+
+                  {/* Multi-valued Toggle */}
+                  <div className="checkbox-group">
+                    <span
+                      className={`checkbox-icon ${child.multi ? "yes" : "no"}`}
+                      onClick={() =>
+                        updateGroupChild(idx, "multi", !child.multi)
+                      }
+                    >
+                      {child.multi ? "✓" : "−"}
+                    </span>
+                    <span>Multi</span>
+                  </div>
+
+                  {/* Max Multi-field Count - shown only when multi is true */}
+                  {child.multi && (
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      value={child.max_multifield || ""}
+                      onChange={(e) =>
+                        updateGroupChild(
+                          idx,
+                          "max_multifield",
+                          e.target.value ? Number(e.target.value) : ""
+                        )
+                      }
+                      min="1"
+                      style={{ width: "70px" }}
+                      title="Maximum number of values allowed"
+                    />
+                  )}
+
+                  {/* Delete Button */}
+                  <button
+                    className="icon-btn delete-icon"
+                    onClick={() => deleteGroupChild(idx)}
+                    title="Delete Child Field"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              ))}
             </div>
             <div className="modal-actions">
               <button onClick={closeGroupModal}>Cancel</button>
