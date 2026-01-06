@@ -1,13 +1,13 @@
 const customerMetaData = {
   "application": "customer",
   "type": "core",
-  "columns": 1,
+  "columns":2,
   "fields": {
     "customer.name.1": {
       "field_name": "customer_name_1",
       "label": "Customer Name 1",
-      "type": "string",
-      "multi": false,
+      "type": "alphaneumeric",
+      "multivalued": true,
       "mandatory": true,
       "min_length": 2,
       "max_length": 100,

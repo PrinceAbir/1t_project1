@@ -1,21 +1,27 @@
 // src/components/version/VersionDesignerWorkspace.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import ActionButtons from '../components/ActionButtons'; // Import the ActionButtons component
+import './VersionDesignerWorkspace.css';
 
 const VersionDesignerWorkspace = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   // Extract data from navigation state
   const { application, version, coreFields, appInput } = location.state || {};
 
   // States for each tab
   const [activeTab, setActiveTab] = useState('field-definitions');
   const [selectedFields, setSelectedFields] = useState({});
+  const [selectedFieldKeys, setSelectedFieldKeys] = useState([]);
   const [isPrintOnly, setIsPrintOnly] = useState(false);
   const [description, setDescription] = useState('');
   const [language, setLanguage] = useState('1');
   const [noOfAuth, setNoOfAuth] = useState('');
+
+  // Multi-select dropdown state
+  const [selectedDropdownOptions, setSelectedDropdownOptions] = useState([]);
 
   // Dropdown tab
   const [dropDowns, setDropDowns] = useState([
@@ -66,6 +72,15 @@ const VersionDesignerWorkspace = () => {
     authorizer: ''
   });
 
+  // Loading state for commit
+  const [isCommitting, setIsCommitting] = useState(false);
+
+  // Available fields for selection
+  const availableFields = useMemo(() => {
+    if (!coreFields) return [];
+    return Object.keys(coreFields).filter(k => !selectedFields[k]);
+  }, [coreFields, selectedFields]);
+
   useEffect(() => {
     if (!application || !version || !coreFields) {
       navigate('/version-designer');
@@ -76,26 +91,181 @@ const VersionDesignerWorkspace = () => {
     navigate('/version-designer');
   };
 
+  // Handle commit button click
+  const handleCommit = async () => {
+    setIsCommitting(true);
+    try {
+      // Prepare the version data
+      const versionData = {
+        application,
+        version,
+        appInput,
+        description,
+        language,
+        noOfAuth,
+        isPrintOnly,
+        fields: selectedFields,
+        dropDowns,
+        autoDefaults,
+        fieldProperties,
+        apiHooks,
+        otherDetails,
+        service,
+        audit,
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      };
+      
+      // Log the data being sent (for debugging)
+      console.log('Committing version data:', JSON.stringify(versionData, null, 2));
+      
+      // Make POST request to the API
+      const response = await fetch('http://localhost:5000/api/applications/version', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(versionData),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Commit successful:', result);
+      
+      alert(`Version "${version}" for "${application}" committed successfully!`);
+      
+    } catch (error) {
+      console.error('Error committing version:', error);
+      alert(`Failed to commit version: ${error.message}`);
+    } finally {
+      setIsCommitting(false);
+    }
+  };
+
+  // Handle hold button click
+  const handleHold = () => {
+    // For now, just show a message
+    alert('Hold functionality - This would save the current state as a draft');
+    
+    // You can implement actual hold/draft saving logic here
+    const draftData = {
+      application,
+      version,
+      appInput,
+      description,
+      language,
+      noOfAuth,
+      isPrintOnly,
+      fields: selectedFields,
+      dropDowns,
+      autoDefaults,
+      fieldProperties,
+      apiHooks,
+      otherDetails,
+      service,
+      audit,
+      savedAt: new Date().toISOString(),
+      status: 'draft'
+    };
+    
+    console.log('Hold (Save Draft):', JSON.stringify(draftData, null, 2));
+  };
+
+  // Handle validate button click
+  const handleValidate = () => {
+    const errors = [];
+    
+    // Validation checks
+    if (!description.trim()) {
+      errors.push('Description is required');
+    }
+    
+    if (Object.keys(selectedFields).length === 0) {
+      errors.push('At least one field must be selected');
+    }
+    
+    // Check if any dropdown fields have dropdown source configured
+    const dropdownFields = Object.entries(selectedFields)
+      .filter(([_, field]) => field.displayType === 'Dropdown');
+    
+    dropdownFields.forEach(([key, field]) => {
+      if (!field.dropdownSource) {
+        errors.push(`Field "${field.label || key}" is set as Dropdown but no dropdown source is selected`);
+      }
+    });
+    
+    if (errors.length > 0) {
+      alert('Validation Errors:\n\n' + errors.join('\n'));
+    } else {
+      alert('Validation successful! All required configurations are in place.');
+    }
+  };
+
+  // Handle multi-select field addition
+  const handleAddFields = (keys) => {
+    if (!keys || keys.length === 0) return;
+
+    const newFields = {};
+    keys.forEach(key => {
+      if (!selectedFields[key] && coreFields[key]) {
+        const coreField = coreFields[key];
+        newFields[key] = {
+          ...coreField,
+          column: '',
+          textMax: coreField.max_length?.toString() || '',
+          text: '',
+          attribute: '',
+          displayType: 'Text',
+          dropdownSource: '', // Add dropdownSource property
+          toolTip: '',
+          enrich: false,
+          mandatory: coreField.mandatory || false,
+          min_length: coreField.min_length,
+          max_length: coreField.max_length
+        };
+      }
+    });
+
+    setSelectedFields(prev => ({ ...prev, ...newFields }));
+    setSelectedFieldKeys(prev => [...prev, ...keys.filter(k => !prev.includes(k))]);
+  };
+
+  // Handle single field addition
   const addField = (key) => {
     if (!key || selectedFields[key]) return;
-    
+
     const coreField = coreFields[key];
     const newField = {
       ...coreField,
-      // Add version-specific properties
       column: '',
       textMax: coreField.max_length?.toString() || '',
       text: '',
       attribute: '',
       displayType: 'Text',
+      dropdownSource: '', // Add dropdownSource property
       toolTip: '',
       enrich: false,
       mandatory: coreField.mandatory || false,
       min_length: coreField.min_length,
       max_length: coreField.max_length
     };
-    
+
     setSelectedFields(prev => ({ ...prev, [key]: newField }));
+    setSelectedFieldKeys(prev => [...prev, key]);
+  };
+
+  // Handle batch field addition from selected dropdown options
+  const handleBatchAddFields = () => {
+    if (selectedDropdownOptions.length === 0) {
+      alert('Please select fields from the dropdown');
+      return;
+    }
+
+    handleAddFields(selectedDropdownOptions);
+    setSelectedDropdownOptions([]);
   };
 
   const removeField = (key) => {
@@ -104,813 +274,938 @@ const VersionDesignerWorkspace = () => {
       delete copy[key];
       return copy;
     });
+    setSelectedFieldKeys(prev => prev.filter(k => k !== key));
   };
 
   const updateFieldProperty = (key, property, value) => {
-    setSelectedFields(prev => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        [property]: value
+    setSelectedFields(prev => {
+      const updatedField = { ...prev[key] };
+      
+      if (property === 'displayType' && value !== 'Dropdown') {
+        // Clear dropdown source if changing from Dropdown to another type
+        updatedField.dropdownSource = '';
       }
-    }));
+      
+      updatedField[property] = value;
+      
+      return {
+        ...prev,
+        [key]: updatedField
+      };
+    });
   };
 
-  // Tab content renderers
+  // Handle dropdown selection changes
+  const handleDropdownOptionToggle = (key) => {
+    setSelectedDropdownOptions(prev => {
+      if (prev.includes(key)) {
+        return prev.filter(k => k !== key);
+      } else {
+        return [...prev, key];
+      }
+    });
+  };
+
+  // Handle select all available fields
+  const handleSelectAllAvailable = () => {
+    const allAvailable = availableFields.filter(k => !selectedDropdownOptions.includes(k));
+    setSelectedDropdownOptions(prev => [...prev, ...allAvailable]);
+  };
+
+  // Handle clear all selected from dropdown
+  const handleClearDropdownSelection = () => {
+    setSelectedDropdownOptions([]);
+  };
+
+  // Get field details for display
+  const getFieldDetails = (key) => {
+    if (!coreFields || !coreFields[key]) return null;
+    return coreFields[key];
+  };
+
+  // Render field type badge
+  const renderFieldTypeBadge = (type) => {
+    const typeColors = {
+      'string': 'text-bg-blue',
+      'dropdown': 'text-bg-green',
+      'date': 'text-bg-purple',
+      'number': 'text-bg-orange',
+      'boolean': 'text-bg-red'
+    };
+
+    const colorClass = typeColors[type] || 'text-bg-gray';
+    return (
+      <span className={`field-type-badge ${colorClass}`}>
+        {type}
+      </span>
+    );
+  };
+
+  // Tab components (keep all the existing tab render functions exactly as they were)
+  // ... [All the tab render functions remain exactly the same] ...
+
   const renderFieldDefinitions = () => (
-    <div style={{ padding: '20px' }}>
+    <div className="tab-content">
       {/* Print Only */}
-      <div style={{ marginBottom: '30px' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <input
-            type="checkbox"
-            checked={isPrintOnly}
-            onChange={(e) => setIsPrintOnly(e.target.checked)}
-            style={{ width: '16px', height: '16px' }}
-          />
-          <span style={{ fontSize: '16px', color: '#334155' }}>Print Only</span>
-        </label>
+      <div className="section">
+        <div className="checkbox-group">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={isPrintOnly}
+              onChange={(e) => setIsPrintOnly(e.target.checked)}
+            />
+            <span className="checkbox-text">Print Only</span>
+          </label>
+        </div>
       </div>
 
       {/* Description */}
-      <div style={{ marginBottom: '30px' }}>
-        <h3 style={{ fontSize: '16px', color: '#334155', marginBottom: '10px' }}>Description</h3>
+      <div className="section">
+        <h3 className="section-title">Description</h3>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows="3"
-          style={{
-            width: '100%',
-            padding: '12px',
-            border: '1px solid #cbd5e1',
-            borderRadius: '6px',
-            fontSize: '14px',
-            resize: 'vertical'
-          }}
+          placeholder="Enter version description..."
+          className="description-textarea"
         />
       </div>
 
       {/* Language and No. of Auth */}
-      <div style={{ display: 'flex', gap: '30px', marginBottom: '30px' }}>
-        <div>
-          <h3 style={{ fontSize: '16px', color: '#334155', marginBottom: '10px' }}>Language 1</h3>
+      <div className="form-row">
+        <div className="form-group">
+          <label className="form-label">Language 1</label>
           <input
             type="text"
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            style={{
-              width: '100px',
-              padding: '8px 12px',
-              border: '1px solid #cbd5e1',
-              borderRadius: '6px',
-              fontSize: '14px'
-            }}
+            className="form-input small-input"
           />
         </div>
-        <div>
-          <h3 style={{ fontSize: '16px', color: '#334155', marginBottom: '10px' }}>No. of Auth</h3>
+        <div className="form-group">
+          <label className="form-label">No. of Auth</label>
           <input
             type="text"
             value={noOfAuth}
             onChange={(e) => setNoOfAuth(e.target.value)}
-            style={{
-              width: '100px',
-              padding: '8px 12px',
-              border: '1px solid #cbd5e1',
-              borderRadius: '6px',
-              fontSize: '14px'
-            }}
+            placeholder="Enter number"
+            className="form-input small-input"
           />
         </div>
       </div>
 
-      {/* Field Definitions Table */}
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h3 style={{ fontSize: '18px', color: '#334155' }}>Field Definitions</h3>
-          <select
-            onChange={(e) => e.target.value && addField(e.target.value)}
-            defaultValue=""
-            style={{
-              padding: '8px 12px',
-              border: '1px solid #cbd5e1',
-              borderRadius: '6px',
-              fontSize: '14px',
-              minWidth: '200px'
-            }}
-          >
-            <option value="" disabled>-- Add a field --</option>
-            {Object.keys(coreFields)
-              .filter(k => !selectedFields[k])
-              .map(k => (
-                <option key={k} value={k}>
-                  {coreFields[k].label}
-                </option>
-              ))}
-          </select>
+      {/* Field Selection Section */}
+      <div className="section">
+        <div className="section-header">
+          <h3 className="section-title">Select Fields</h3>
+          <div className="field-selection-stats">
+            <span className="stat-item">
+              Available: <strong>{availableFields.length}</strong>
+            </span>
+            <span className="stat-item">
+              Selected: <strong>{Object.keys(selectedFields).length}</strong>
+            </span>
+          </div>
         </div>
 
-        <table style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          border: '1px solid #cbd5e1',
-          borderRadius: '6px',
-          overflow: 'hidden'
-        }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
-              {['Field Name', 'Col.', 'TextMax.', 'Text', 'Attribute', 'Display Type', 'Tool Tip', 'Enrich', 'Actions'].map(header => (
-                <th key={header} style={{
-                  padding: '12px 15px',
-                  textAlign: 'left',
-                  fontSize: '14px',
-                  color: '#334155',
-                  fontWeight: '600'
-                }}>
-                  {header}
-                </th>
+        {/* Multi-Select Dropdown */}
+        <div className="multi-select-container">
+          <div className="multi-select-header">
+            <div className="multi-select-title">
+              <span className="select-icon">📋</span>
+              <span>Select Multiple Fields</span>
+            </div>
+            <div className="multi-select-actions">
+              <button
+                onClick={handleSelectAllAvailable}
+                className="btn-secondary btn-small"
+                disabled={availableFields.length === 0}
+              >
+                Select All
+              </button>
+              <button
+                onClick={handleClearDropdownSelection}
+                className="btn-secondary btn-small"
+                disabled={selectedDropdownOptions.length === 0}
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <div className="multi-select-dropdown">
+            <div className="dropdown-list">
+              {availableFields.length === 0 ? (
+                <div className="empty-dropdown-state">
+                  <span className="empty-icon">✅</span>
+                  <p>All fields have been added</p>
+                </div>
+              ) : (
+                availableFields.map(key => {
+                  const field = getFieldDetails(key);
+                  if (!field) return null;
+
+                  return (
+                    <div
+                      key={key}
+                      className={`dropdown-option ${selectedDropdownOptions.includes(key) ? 'selected' : ''}`}
+                      onClick={() => handleDropdownOptionToggle(key)}
+                    >
+                      <div className="option-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={selectedDropdownOptions.includes(key)}
+                          onChange={() => handleDropdownOptionToggle(key)}
+                          className="checkbox-input"
+                        />
+                      </div>
+                      <div className="option-content">
+                        <div className="option-header">
+                          <span className="option-name">{field.label || field.field_name}</span>
+                          {renderFieldTypeBadge(field.type)}
+                        </div>
+                        <div className="option-details">
+                          <span className="option-id">{field.field_name}</span>
+                          {field.mandatory && (
+                            <span className="option-mandatory">Required</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          <div className="multi-select-footer">
+            <div className="selection-summary">
+              <span className="summary-text">
+                {selectedDropdownOptions.length} field{selectedDropdownOptions.length !== 1 ? 's' : ''} selected
+              </span>
+            </div>
+            <button
+              onClick={handleBatchAddFields}
+              className="btn-primary"
+              disabled={selectedDropdownOptions.length === 0}
+            >
+              <span className="btn-icon">+</span>
+              Add Selected Fields
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Add Field */}
+        <div className="quick-add-section">
+          <h4 className="quick-add-title">Quick Add Single Field</h4>
+          <div className="quick-add-controls">
+            <select
+              onChange={(e) => e.target.value && addField(e.target.value)}
+              defaultValue=""
+              className="field-select-dropdown"
+              disabled={availableFields.length === 0}
+            >
+              <option value="" disabled>Select a field to add</option>
+              {availableFields.map(k => (
+                <option key={k} value={k}>
+                  {coreFields[k].label} ({coreFields[k].type})
+                </option>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {Object.keys(selectedFields).length === 0 ? (
-              <tr>
-                <td colSpan="9" style={{
-                  textAlign: 'center',
-                  padding: '40px',
-                  color: '#94a3b8',
-                  fontStyle: 'italic'
-                }}>
-                  No fields selected yet. Use the dropdown to add fields.
-                </td>
-              </tr>
-            ) : (
-              Object.keys(selectedFields).map(key => {
-                const field = selectedFields[key];
-                return (
-                  <tr key={key} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
-                    <td style={{ padding: '12px 15px', fontSize: '14px', color: '#334155' }}>
-                      {field.field_name}
-                    </td>
-                    <td style={{ padding: '12px 15px' }}>
+            </select>
+            <button
+              onClick={() => {
+                const select = document.querySelector('.field-select-dropdown');
+                if (select.value) addField(select.value);
+              }}
+              className="btn-secondary"
+              disabled={availableFields.length === 0}
+            >
+              Add Field
+            </button>
+          </div>
+        </div>
+
+        {/* Field Definitions Table */}
+        <div className="field-definitions-section">
+          <div className="section-header">
+            <h3 className="section-title">Field Definitions</h3>
+            <div className="field-count-badge">
+              {Object.keys(selectedFields).length} fields
+            </div>
+          </div>
+
+          {Object.keys(selectedFields).length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-icon">📝</div>
+              <h4>No Fields Added Yet</h4>
+              <p>Use the multi-select dropdown or quick add above to add fields to your version.</p>
+            </div>
+          ) : (
+            <div className="fields-table-container">
+              <table className="fields-table">
+                <thead>
+                  <tr>
+                    <th>Field Name</th>
+                    <th>Label</th>
+                    <th>Type</th>
+                    <th>Col.</th>
+                    <th>TextMax.</th>
+                    <th>Display Type</th>
+                    <th>Tool Tip</th>
+                    <th>Enrich</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedFieldKeys.map(key => {
+                    const field = selectedFields[key];
+                    return (
+                      <tr key={key}>
+                        <td className="field-name-cell">
+                          <div className="field-name-content">
+                            <span className="field-name">{field.field_name}</span>
+                            {field.mandatory && (
+                              <span className="required-badge">Required</span>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            value={field.label || ''}
+                            onChange={(e) => updateFieldProperty(key, 'label', e.target.value)}
+                            placeholder="Display label"
+                            className="table-input"
+                          />
+                        </td>
+                        <td>
+                          <div className="field-type-cell">
+                            {renderFieldTypeBadge(field.type)}
+                          </div>
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            value={field.column || ''}
+                            onChange={(e) => updateFieldProperty(key, 'column', e.target.value)}
+                            placeholder="Col"
+                            className="table-input small-input"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            value={field.textMax || ''}
+                            onChange={(e) => updateFieldProperty(key, 'textMax', e.target.value)}
+                            placeholder="Max"
+                            className="table-input small-input"
+                          />
+                        </td>
+                        <td>
+                          <select
+                            value={field.displayType || 'Text'}
+                            onChange={(e) => updateFieldProperty(key, 'displayType', e.target.value)}
+                            className="table-select"
+                          >
+                            <option value="Text">Text</option>
+                            <option value="Dropdown">Dropdown</option>
+                            <option value="Date">Date</option>
+                            <option value="Number">Number</option>
+                            <option value="Checkbox">Checkbox</option>
+                          </select>
+
+                          {/* Add dropdown selection when display type is Dropdown */}
+                          {field.displayType === 'Dropdown' && (
+                            <select
+                              value={field.dropdownSource || ''}
+                              onChange={(e) => updateFieldProperty(key, 'dropdownSource', e.target.value)}
+                              className="table-select dropdown-source-select"
+                              style={{ marginTop: '5px', width: '100%' }}
+                            >
+                              <option value="">Select a dropdown...</option>
+                              <option value="sector">Sector</option>
+                              <option value="industry">Industry</option>
+                              <option value="nationality">Nationality</option>
+                              <option value="customerStatus">Customer Status</option>
+                              <option value="residence">Residence</option>
+                              <option value="accountOfficer">Account Officer</option>
+                              <option value="otherOfficer1">Other Officer 1</option>
+                            </select>
+                          )}
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            value={field.toolTip || ''}
+                            onChange={(e) => updateFieldProperty(key, 'toolTip', e.target.value)}
+                            placeholder="Tooltip text"
+                            className="table-input"
+                          />
+                        </td>
+                        <td className="enrich-cell">
+                          <label className="checkbox-inline">
+                            <input
+                              type="checkbox"
+                              checked={field.enrich || false}
+                              onChange={(e) => updateFieldProperty(key, 'enrich', e.target.checked)}
+                              className="checkbox-input"
+                            />
+                            <span className="checkbox-label">Enrich</span>
+                          </label>
+                        </td>
+                        <td className="actions-cell">
+                          <button
+                            onClick={() => removeField(key)}
+                            className="btn-danger btn-small"
+                            title="Remove field"
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ... [All other tab render functions remain exactly as they were in your original code] ...
+
+  const renderDropDown = () => (
+    <div className="tab-content">
+      <div className="section">
+        <h3 className="section-title">Drop Down Configurations</h3>
+        <p className="section-description">
+          Configure dropdown fields for this version. Each row defines a dropdown field, its source, and selection criteria.
+        </p>
+
+        <div className="table-controls">
+          <button
+            onClick={() => setDropDowns([...dropDowns, { fieldName: '', dropDown: '', selection: '' }])}
+            className="btn-primary"
+          >
+            <span className="btn-icon">+</span>
+            Add Dropdown Configuration
+          </button>
+        </div>
+
+        {dropDowns.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">📋</div>
+            <h4>No Dropdown Configurations</h4>
+            <p>Add dropdown configurations to define custom dropdown fields for this version.</p>
+          </div>
+        ) : (
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Field Name</th>
+                  <th>Drop Down Source</th>
+                  <th>Selection Criteria</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dropDowns.map((row, index) => (
+                  <tr key={index}>
+                    <td>
                       <input
                         type="text"
-                        value={field.column || ''}
-                        onChange={(e) => updateFieldProperty(key, 'column', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '6px 8px',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '4px',
-                          fontSize: '14px'
+                        value={row.fieldName}
+                        onChange={(e) => {
+                          const updated = [...dropDowns];
+                          updated[index].fieldName = e.target.value;
+                          setDropDowns(updated);
                         }}
+                        placeholder="Field name"
+                        className="table-input"
                       />
                     </td>
-                    <td style={{ padding: '12px 15px' }}>
+                    <td>
                       <input
                         type="text"
-                        value={field.textMax || ''}
-                        onChange={(e) => updateFieldProperty(key, 'textMax', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '6px 8px',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '4px',
-                          fontSize: '14px'
+                        value={row.dropDown}
+                        onChange={(e) => {
+                          const updated = [...dropDowns];
+                          updated[index].dropDown = e.target.value;
+                          setDropDowns(updated);
                         }}
+                        placeholder="Dropdown source"
+                        className="table-input"
                       />
                     </td>
-                    <td style={{ padding: '12px 15px' }}>
+                    <td>
                       <input
                         type="text"
-                        value={field.text || ''}
-                        onChange={(e) => updateFieldProperty(key, 'text', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '6px 8px',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '4px',
-                          fontSize: '14px'
+                        value={row.selection}
+                        onChange={(e) => {
+                          const updated = [...dropDowns];
+                          updated[index].selection = e.target.value;
+                          setDropDowns(updated);
                         }}
+                        placeholder="Selection criteria"
+                        className="table-input"
                       />
                     </td>
-                    <td style={{ padding: '12px 15px' }}>
-                      <input
-                        type="text"
-                        value={field.attribute || ''}
-                        onChange={(e) => updateFieldProperty(key, 'attribute', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '6px 8px',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '4px',
-                          fontSize: '14px'
-                        }}
-                      />
-                    </td>
-                    <td style={{ padding: '12px 15px' }}>
-                      <select
-                        value={field.displayType || 'Text'}
-                        onChange={(e) => updateFieldProperty(key, 'displayType', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '6px 8px',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '4px',
-                          fontSize: '14px'
-                        }}
-                      >
-                        <option value="Text">Text</option>
-                        <option value="Dropdown">Dropdown</option>
-                        <option value="Date">Date</option>
-                        <option value="Number">Number</option>
-                      </select>
-                    </td>
-                    <td style={{ padding: '12px 15px' }}>
-                      <input
-                        type="text"
-                        value={field.toolTip || ''}
-                        onChange={(e) => updateFieldProperty(key, 'toolTip', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '6px 8px',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '4px',
-                          fontSize: '14px'
-                        }}
-                      />
-                    </td>
-                    <td style={{ padding: '12px 15px', textAlign: 'center' }}>
-                      <input
-                        type="checkbox"
-                        checked={field.enrich || false}
-                        onChange={(e) => updateFieldProperty(key, 'enrich', e.target.checked)}
-                        style={{ width: '16px', height: '16px' }}
-                      />
-                    </td>
-                    <td style={{ padding: '12px 15px' }}>
+                    <td className="actions-cell">
                       <button
-                        onClick={() => removeField(key)}
-                        style={{
-                          padding: '6px 12px',
-                          backgroundColor: '#fee2e2',
-                          color: '#dc2626',
-                          border: '1px solid #fecaca',
-                          borderRadius: '4px',
-                          fontSize: '13px',
-                          cursor: 'pointer'
-                        }}
+                        onClick={() => setDropDowns(dropDowns.filter((_, i) => i !== index))}
+                        className="btn-danger btn-small"
+                        title="Remove configuration"
                       >
                         Remove
                       </button>
                     </td>
                   </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
-  const renderDropDown = () => (
-    <div style={{ padding: '20px' }}>
-      <div style={{ marginBottom: '30px' }}>
-        <h3 style={{ fontSize: '18px', color: '#334155', marginBottom: '20px' }}>Drop Down</h3>
-        <button
-          onClick={() => setDropDowns([...dropDowns, { fieldName: '', dropDown: '', selection: '' }])}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#10b981',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontSize: '14px',
-            cursor: 'pointer',
-            marginBottom: '20px'
-          }}
-        >
-          + Add Row
-        </button>
-        
-        <table style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          border: '1px solid #cbd5e1',
-          borderRadius: '6px',
-          overflow: 'hidden'
-        }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
-              {['Field Name', 'Drop Down', 'Selection', 'Actions'].map(header => (
-                <th key={header} style={{
-                  padding: '12px 15px',
-                  textAlign: 'left',
-                  fontSize: '14px',
-                  color: '#334155',
-                  fontWeight: '600'
-                }}>
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {dropDowns.map((row, index) => (
-              <tr key={index} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
-                <td style={{ padding: '12px 15px' }}>
-                  <input
-                    type="text"
-                    value={row.fieldName}
-                    onChange={(e) => {
-                      const updated = [...dropDowns];
-                      updated[index].fieldName = e.target.value;
-                      setDropDowns(updated);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '6px 8px',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '4px',
-                      fontSize: '14px'
-                    }}
-                  />
-                </td>
-                <td style={{ padding: '12px 15px' }}>
-                  <input
-                    type="text"
-                    value={row.dropDown}
-                    onChange={(e) => {
-                      const updated = [...dropDowns];
-                      updated[index].dropDown = e.target.value;
-                      setDropDowns(updated);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '6px 8px',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '4px',
-                      fontSize: '14px'
-                    }}
-                  />
-                </td>
-                <td style={{ padding: '12px 15px' }}>
-                  <input
-                    type="text"
-                    value={row.selection}
-                    onChange={(e) => {
-                      const updated = [...dropDowns];
-                      updated[index].selection = e.target.value;
-                      setDropDowns(updated);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '6px 8px',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '4px',
-                      fontSize: '14px'
-                    }}
-                  />
-                </td>
-                <td style={{ padding: '12px 15px' }}>
-                  <button
-                    onClick={() => setDropDowns(dropDowns.filter((_, i) => i !== index))}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: '#fee2e2',
-                      color: '#dc2626',
-                      border: '1px solid #fecaca',
-                      borderRadius: '4px',
-                      fontSize: '13px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
 
   const renderAutomaticDefaulting = () => (
-    <div style={{ padding: '20px' }}>
-      <div style={{ marginBottom: '30px' }}>
-        <h3 style={{ fontSize: '18px', color: '#334155', marginBottom: '20px' }}>Automatic Defaulting</h3>
-        <button
-          onClick={() => setAutoDefaults([...autoDefaults, { fieldToDefault: '', defaultValue: '', replaces: '' }])}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#10b981',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontSize: '14px',
-            cursor: 'pointer',
-            marginBottom: '20px'
-          }}
-        >
-          + Add Row
-        </button>
-        
-        <table style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          border: '1px solid #cbd5e1',
-          borderRadius: '6px',
-          overflow: 'hidden'
-        }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
-              {['Field to default', 'Default Value', 'Replaces', 'Actions'].map(header => (
-                <th key={header} style={{
-                  padding: '12px 15px',
-                  textAlign: 'left',
-                  fontSize: '14px',
-                  color: '#334155',
-                  fontWeight: '600'
-                }}>
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {autoDefaults.map((row, index) => (
-              <tr key={index} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
-                <td style={{ padding: '12px 15px' }}>
-                  <input
-                    type="text"
-                    value={row.fieldToDefault}
-                    onChange={(e) => {
-                      const updated = [...autoDefaults];
-                      updated[index].fieldToDefault = e.target.value;
-                      setAutoDefaults(updated);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '6px 8px',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '4px',
-                      fontSize: '14px'
-                    }}
-                  />
-                </td>
-                <td style={{ padding: '12px 15px' }}>
-                  <input
-                    type="text"
-                    value={row.defaultValue}
-                    onChange={(e) => {
-                      const updated = [...autoDefaults];
-                      updated[index].defaultValue = e.target.value;
-                      setAutoDefaults(updated);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '6px 8px',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '4px',
-                      fontSize: '14px'
-                    }}
-                  />
-                </td>
-                <td style={{ padding: '12px 15px' }}>
-                  <input
-                    type="text"
-                    value={row.replaces}
-                    onChange={(e) => {
-                      const updated = [...autoDefaults];
-                      updated[index].replaces = e.target.value;
-                      setAutoDefaults(updated);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '6px 8px',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '4px',
-                      fontSize: '14px'
-                    }}
-                  />
-                </td>
-                <td style={{ padding: '12px 15px' }}>
-                  <button
-                    onClick={() => setAutoDefaults(autoDefaults.filter((_, i) => i !== index))}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: '#fee2e2',
-                      color: '#dc2626',
-                      border: '1px solid #fecaca',
-                      borderRadius: '4px',
-                      fontSize: '13px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="tab-content">
+      <div className="section">
+        <h3 className="section-title">Automatic Defaulting</h3>
+        <p className="section-description">
+          Configure automatic field defaults. When a field matches the "Replaces" value, it will be auto-filled with the "Default Value".
+        </p>
+
+        <div className="table-controls">
+          <button
+            onClick={() => setAutoDefaults([...autoDefaults, { fieldToDefault: '', defaultValue: '', replaces: '' }])}
+            className="btn-primary"
+          >
+            <span className="btn-icon">+</span>
+            Add Default Rule
+          </button>
+        </div>
+
+        {autoDefaults.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">⚡</div>
+            <h4>No Default Rules</h4>
+            <p>Add rules to automatically populate fields with default values.</p>
+          </div>
+        ) : (
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Field to Default</th>
+                  <th>Default Value</th>
+                  <th>Replaces</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {autoDefaults.map((row, index) => (
+                  <tr key={index}>
+                    <td>
+                      <input
+                        type="text"
+                        value={row.fieldToDefault}
+                        onChange={(e) => {
+                          const updated = [...autoDefaults];
+                          updated[index].fieldToDefault = e.target.value;
+                          setAutoDefaults(updated);
+                        }}
+                        placeholder="Field to default"
+                        className="table-input"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        value={row.defaultValue}
+                        onChange={(e) => {
+                          const updated = [...autoDefaults];
+                          updated[index].defaultValue = e.target.value;
+                          setAutoDefaults(updated);
+                        }}
+                        placeholder="Default value"
+                        className="table-input"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        value={row.replaces}
+                        onChange={(e) => {
+                          const updated = [...autoDefaults];
+                          updated[index].replaces = e.target.value;
+                          setAutoDefaults(updated);
+                        }}
+                        placeholder="Value to replace"
+                        className="table-input"
+                      />
+                    </td>
+                    <td className="actions-cell">
+                      <button
+                        onClick={() => setAutoDefaults(autoDefaults.filter((_, i) => i !== index))}
+                        className="btn-danger btn-small"
+                        title="Remove rule"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
 
   const renderFieldProperties = () => (
-    <div style={{ padding: '20px' }}>
-      <h3 style={{ fontSize: '18px', color: '#334155', marginBottom: '20px' }}>Field Properties</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', maxWidth: '500px' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '6px' }}>
-          <input
-            type="checkbox"
-            checked={fieldProperties.rightAdjust}
-            onChange={(e) => setFieldProperties({...fieldProperties, rightAdjust: e.target.checked})}
-            style={{ width: '16px', height: '16px' }}
-          />
-          <span>Right adjust 1</span>
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '6px' }}>
-          <input
-            type="checkbox"
-            checked={fieldProperties.noInput}
-            onChange={(e) => setFieldProperties({...fieldProperties, noInput: e.target.checked})}
-            style={{ width: '16px', height: '16px' }}
-          />
-          <span>No input 1</span>
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '6px' }}>
-          <input
-            type="checkbox"
-            checked={fieldProperties.noChange}
-            onChange={(e) => setFieldProperties({...fieldProperties, noChange: e.target.checked})}
-            style={{ width: '16px', height: '16px' }}
-          />
-          <span>No change 1</span>
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '6px' }}>
-          <input
-            type="checkbox"
-            checked={fieldProperties.reKey}
-            onChange={(e) => setFieldProperties({...fieldProperties, reKey: e.target.checked})}
-            style={{ width: '16px', height: '16px' }}
-          />
-          <span>Re-key 1</span>
-        </label>
+    <div className="tab-content">
+      <div className="section">
+        <h3 className="section-title">Field Properties</h3>
+        <p className="section-description">
+          Configure global field properties that apply to all fields in this version.
+        </p>
+
+        <div className="field-properties-grid">
+          <label className="property-checkbox">
+            <input
+              type="checkbox"
+              checked={fieldProperties.rightAdjust}
+              onChange={(e) => setFieldProperties({ ...fieldProperties, rightAdjust: e.target.checked })}
+              className="checkbox-input"
+            />
+            <div className="property-content">
+              <span className="property-label">Right Adjust</span>
+              <span className="property-description">Align text to the right</span>
+            </div>
+          </label>
+
+          <label className="property-checkbox">
+            <input
+              type="checkbox"
+              checked={fieldProperties.noInput}
+              onChange={(e) => setFieldProperties({ ...fieldProperties, noInput: e.target.checked })}
+              className="checkbox-input"
+            />
+            <div className="property-content">
+              <span className="property-label">No Input</span>
+              <span className="property-description">Field cannot receive input</span>
+            </div>
+          </label>
+
+          <label className="property-checkbox">
+            <input
+              type="checkbox"
+              checked={fieldProperties.noChange}
+              onChange={(e) => setFieldProperties({ ...fieldProperties, noChange: e.target.checked })}
+              className="checkbox-input"
+            />
+            <div className="property-content">
+              <span className="property-label">No Change</span>
+              <span className="property-description">Field value cannot be changed</span>
+            </div>
+          </label>
+
+          <label className="property-checkbox">
+            <input
+              type="checkbox"
+              checked={fieldProperties.reKey}
+              onChange={(e) => setFieldProperties({ ...fieldProperties, reKey: e.target.checked })}
+              className="checkbox-input"
+            />
+            <div className="property-content">
+              <span className="property-label">Re-key Required</span>
+              <span className="property-description">Requires re-entry for confirmation</span>
+            </div>
+          </label>
+        </div>
       </div>
     </div>
   );
 
   const renderApiHooks = () => (
-    <div style={{ padding: '20px' }}>
-      <h3 style={{ fontSize: '18px', color: '#334155', marginBottom: '10px' }}>VERSION API Hooks</h3>
-      <p style={{ color: '#dc2626', fontSize: '12px', marginBottom: '20px', fontStyle: 'italic' }}>
-        ** All API Routines will be invoked before JOURNAL_UPDATE **
-      </p>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '30px', maxWidth: '800px' }}>
-        {[
-          { label: 'Check ID 1', value: apiHooks.checkId, onChange: (val) => setApiHooks({...apiHooks, checkId: val}) },
-          { label: 'Check Record 1', value: apiHooks.checkRecord, onChange: (val) => setApiHooks({...apiHooks, checkRecord: val}) },
-          { label: 'Before Unauth 1', value: apiHooks.beforeUnauth, onChange: (val) => setApiHooks({...apiHooks, beforeUnauth: val}) },
-          { label: 'After Unauth 1', value: apiHooks.afterUnauth, onChange: (val) => setApiHooks({...apiHooks, afterUnauth: val}) }
-        ].map((item, index) => (
-          <div key={index} style={{
-            backgroundColor: '#f8fafc',
-            padding: '15px',
-            borderRadius: '6px',
-            border: '1px solid #cbd5e1'
-          }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#334155', fontWeight: '500' }}>
-              {item.label}
-            </label>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <input
-                type="text"
-                value={item.value}
-                onChange={(e) => item.onChange(e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: '8px 12px',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: '4px',
-                  fontSize: '14px'
-                }}
-              />
-              <button style={{
-                padding: '8px 12px',
-                backgroundColor: '#f1f5f9',
-                border: '1px solid #cbd5e1',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}>+</button>
-              <button style={{
-                padding: '8px 12px',
-                backgroundColor: '#f1f5f9',
-                border: '1px solid #cbd5e1',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}>-</button>
+    <div className="tab-content">
+      <div className="section">
+        <h3 className="section-title">VERSION API Hooks</h3>
+        <p className="api-note">
+          <span className="api-note-icon">⚠️</span>
+          <strong>Note:</strong> All API Routines will be invoked before JOURNAL_UPDATE
+        </p>
+
+        <div className="api-hooks-grid">
+          <div className="api-hook">
+            <div className="api-hook-header">
+              <label className="api-hook-label">Check ID</label>
+              <div className="api-hook-actions">
+                <button className="btn-icon" onClick={() => setApiHooks({ ...apiHooks, checkId: apiHooks.checkId + '1' })}>
+                  <span className="icon-plus">+</span>
+                </button>
+                <button className="btn-icon" onClick={() => setApiHooks({ ...apiHooks, checkId: '' })}>
+                  <span className="icon-minus">-</span>
+                </button>
+              </div>
             </div>
+            <input
+              type="text"
+              value={apiHooks.checkId}
+              onChange={(e) => setApiHooks({ ...apiHooks, checkId: e.target.value })}
+              placeholder="Check ID routine"
+              className="api-hook-input"
+            />
           </div>
-        ))}
+
+          <div className="api-hook">
+            <div className="api-hook-header">
+              <label className="api-hook-label">Check Record</label>
+              <div className="api-hook-actions">
+                <button className="btn-icon" onClick={() => setApiHooks({ ...apiHooks, checkRecord: apiHooks.checkRecord + '1' })}>
+                  <span className="icon-plus">+</span>
+                </button>
+                <button className="btn-icon" onClick={() => setApiHooks({ ...apiHooks, checkRecord: '' })}>
+                  <span className="icon-minus">-</span>
+                </button>
+              </div>
+            </div>
+            <input
+              type="text"
+              value={apiHooks.checkRecord}
+              onChange={(e) => setApiHooks({ ...apiHooks, checkRecord: e.target.value })}
+              placeholder="Check Record routine"
+              className="api-hook-input"
+            />
+          </div>
+
+          <div className="api-hook">
+            <div className="api-hook-header">
+              <label className="api-hook-label">Before Unauth</label>
+              <div className="api-hook-actions">
+                <button className="btn-icon" onClick={() => setApiHooks({ ...apiHooks, beforeUnauth: apiHooks.beforeUnauth + '1' })}>
+                  <span className="icon-plus">+</span>
+                </button>
+                <button className="btn-icon" onClick={() => setApiHooks({ ...apiHooks, beforeUnauth: '' })}>
+                  <span className="icon-minus">-</span>
+                </button>
+              </div>
+            </div>
+            <input
+              type="text"
+              value={apiHooks.beforeUnauth}
+              onChange={(e) => setApiHooks({ ...apiHooks, beforeUnauth: e.target.value })}
+              placeholder="Before Unauth routine"
+              className="api-hook-input"
+            />
+          </div>
+
+          <div className="api-hook">
+            <div className="api-hook-header">
+              <label className="api-hook-label">After Unauth</label>
+              <div className="api-hook-actions">
+                <button className="btn-icon" onClick={() => setApiHooks({ ...apiHooks, afterUnauth: apiHooks.afterUnauth + '1' })}>
+                  <span className="icon-plus">+</span>
+                </button>
+                <button className="btn-icon" onClick={() => setApiHooks({ ...apiHooks, afterUnauth: '' })}>
+                  <span className="icon-minus">-</span>
+                </button>
+              </div>
+            </div>
+            <input
+              type="text"
+              value={apiHooks.afterUnauth}
+              onChange={(e) => setApiHooks({ ...apiHooks, afterUnauth: e.target.value })}
+              placeholder="After Unauth routine"
+              className="api-hook-input"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
 
   const renderOtherDetails = () => (
-    <div style={{ padding: '20px' }}>
-      <h3 style={{ fontSize: '18px', color: '#334155', marginBottom: '20px' }}>Other Details</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', maxWidth: '600px' }}>
-        <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#334155' }}>Associated Version</label>
-          <input
-            type="text"
-            value={otherDetails.associatedVersion}
-            onChange={(e) => setOtherDetails({...otherDetails, associatedVersion: e.target.value})}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #cbd5e1',
-              borderRadius: '4px',
-              fontSize: '14px'
-            }}
-          />
-        </div>
-        <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#334155' }}>Next Version</label>
-          <select
-            value={otherDetails.nextVersion}
-            onChange={(e) => setOtherDetails({...otherDetails, nextVersion: e.target.value})}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #cbd5e1',
-              borderRadius: '4px',
-              fontSize: '14px'
-            }}
-          >
-            <option value="">Select</option>
-            <option value="next1">Next Version 1</option>
-            <option value="next2">Next Version 2</option>
-          </select>
-        </div>
-        <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#334155' }}>Confirm Version</label>
-          <select
-            value={otherDetails.confirmVersion}
-            onChange={(e) => setOtherDetails({...otherDetails, confirmVersion: e.target.value})}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #cbd5e1',
-              borderRadius: '4px',
-              fontSize: '14px'
-            }}
-          >
-            <option value="">Select</option>
-            <option value="confirm1">Confirm Version 1</option>
-            <option value="confirm2">Confirm Version 2</option>
-          </select>
-        </div>
-        <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#334155' }}>Preview Version</label>
-          <select
-            value={otherDetails.previewVersion}
-            onChange={(e) => setOtherDetails({...otherDetails, previewVersion: e.target.value})}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #cbd5e1',
-              borderRadius: '4px',
-              fontSize: '14px'
-            }}
-          >
-            <option value="">Select</option>
-            <option value="preview1">Preview Version 1</option>
-            <option value="preview2">Preview Version 2</option>
-          </select>
+    <div className="tab-content">
+      <div className="section">
+        <h3 className="section-title">Other Details</h3>
+        <p className="section-description">
+          Configure version relationships and navigation settings.
+        </p>
+
+        <div className="form-grid">
+          <div className="form-group">
+            <label className="form-label">Associated Version</label>
+            <input
+              type="text"
+              value={otherDetails.associatedVersion}
+              onChange={(e) => setOtherDetails({ ...otherDetails, associatedVersion: e.target.value })}
+              placeholder="Associated version name"
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Next Version</label>
+            <select
+              value={otherDetails.nextVersion}
+              onChange={(e) => setOtherDetails({ ...otherDetails, nextVersion: e.target.value })}
+              className="form-select"
+            >
+              <option value="">Select next version</option>
+              <option value="next1">Next Version 1</option>
+              <option value="next2">Next Version 2</option>
+              <option value="next3">Next Version 3</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Confirm Version</label>
+            <select
+              value={otherDetails.confirmVersion}
+              onChange={(e) => setOtherDetails({ ...otherDetails, confirmVersion: e.target.value })}
+              className="form-select"
+            >
+              <option value="">Select confirm version</option>
+              <option value="confirm1">Confirm Version 1</option>
+              <option value="confirm2">Confirm Version 2</option>
+              <option value="confirm3">Confirm Version 3</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Preview Version</label>
+            <select
+              value={otherDetails.previewVersion}
+              onChange={(e) => setOtherDetails({ ...otherDetails, previewVersion: e.target.value })}
+              className="form-select"
+            >
+              <option value="">Select preview version</option>
+              <option value="preview1">Preview Version 1</option>
+              <option value="preview2">Preview Version 2</option>
+              <option value="preview3">Preview Version 3</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
   );
 
   const renderService = () => (
-    <div style={{ padding: '20px' }}>
-      <h3 style={{ fontSize: '18px', color: '#334155', marginBottom: '20px' }}>Service</h3>
-      <div style={{ maxWidth: '600px' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '6px' }}>
-          <input
-            type="checkbox"
-            checked={service.exposeAsService}
-            onChange={(e) => setService({...service, exposeAsService: e.target.checked})}
-            style={{ width: '16px', height: '16px' }}
-          />
-          <span>Expose Version as Service?</span>
-        </label>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#334155' }}>Service Name</label>
+    <div className="tab-content">
+      <div className="section">
+        <h3 className="section-title">Service Configuration</h3>
+        <p className="section-description">
+          Configure service exposure settings for this version.
+        </p>
+
+        <div className="service-configuration">
+          <label className="service-checkbox">
             <input
-              type="text"
-              value={service.serviceName}
-              onChange={(e) => setService({...service, serviceName: e.target.value})}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                border: '1px solid #cbd5e1',
-                borderRadius: '4px',
-                fontSize: '14px'
-              }}
+              type="checkbox"
+              checked={service.exposeAsService}
+              onChange={(e) => setService({ ...service, exposeAsService: e.target.checked })}
+              className="checkbox-input"
             />
-          </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#334155' }}>Activity Name</label>
-            <input
-              type="text"
-              value={service.activityName}
-              onChange={(e) => setService({...service, activityName: e.target.value})}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                border: '1px solid #cbd5e1',
-                borderRadius: '4px',
-                fontSize: '14px'
-              }}
-            />
-          </div>
+            <div className="service-content">
+              <span className="service-label">Expose Version as Service?</span>
+              <span className="service-description">
+                Make this version available as a web service endpoint
+              </span>
+            </div>
+          </label>
+
+          {service.exposeAsService && (
+            <div className="service-fields">
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Service Name</label>
+                  <input
+                    type="text"
+                    value={service.serviceName}
+                    onChange={(e) => setService({ ...service, serviceName: e.target.value })}
+                    placeholder="Service name"
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Activity Name</label>
+                  <input
+                    type="text"
+                    value={service.activityName}
+                    onChange={(e) => setService({ ...service, activityName: e.target.value })}
+                    placeholder="Activity name"
+                    className="form-input"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 
   const renderAudit = () => (
-    <div style={{ padding: '20px' }}>
-      <h3 style={{ fontSize: '18px', color: '#334155', marginBottom: '20px' }}>Audit</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', maxWidth: '600px' }}>
-        <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#334155' }}>Record Status</label>
-          <input
-            type="text"
-            value={audit.recordStatus}
-            onChange={(e) => setAudit({...audit, recordStatus: e.target.value})}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #cbd5e1',
-              borderRadius: '4px',
-              fontSize: '14px'
-            }}
-          />
-        </div>
-        <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#334155' }}>Current No</label>
-          <input
-            type="text"
-            value={audit.currentNo}
-            onChange={(e) => setAudit({...audit, currentNo: e.target.value})}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #cbd5e1',
-              borderRadius: '4px',
-              fontSize: '14px'
-            }}
-          />
-        </div>
-        <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#334155' }}>Inputter</label>
-          <input
-            type="text"
-            value={audit.inputter}
-            onChange={(e) => setAudit({...audit, inputter: e.target.value})}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #cbd5e1',
-              borderRadius: '4px',
-              fontSize: '14px'
-            }}
-          />
-        </div>
-        <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#334155' }}>Authorizer</label>
-          <input
-            type="text"
-            value={audit.authorizer}
-            onChange={(e) => setAudit({...audit, authorizer: e.target.value})}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #cbd5e1',
-              borderRadius: '4px',
-              fontSize: '14px'
-            }}
-          />
+    <div className="tab-content">
+      <div className="section">
+        <h3 className="section-title">Audit Information</h3>
+        <p className="section-description">
+          Configure audit trail settings for this version.
+        </p>
+
+        <div className="form-grid">
+          <div className="form-group">
+            <label className="form-label">Record Status</label>
+            <input
+              type="text"
+              value={audit.recordStatus}
+              onChange={(e) => setAudit({ ...audit, recordStatus: e.target.value })}
+              placeholder="Record status"
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Current No</label>
+            <input
+              type="text"
+              value={audit.currentNo}
+              onChange={(e) => setAudit({ ...audit, currentNo: e.target.value })}
+              placeholder="Current number"
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Inputter</label>
+            <input
+              type="text"
+              value={audit.inputter}
+              onChange={(e) => setAudit({ ...audit, inputter: e.target.value })}
+              placeholder="Inputter ID"
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Authorizer</label>
+            <input
+              type="text"
+              value={audit.authorizer}
+              onChange={(e) => setAudit({ ...audit, authorizer: e.target.value })}
+              placeholder="Authorizer ID"
+              className="form-input"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -935,9 +1230,9 @@ const VersionDesignerWorkspace = () => {
       audit,
       createdAt: new Date().toISOString()
     };
-    
+
     console.log('VERSION SAVED:', JSON.stringify(versionData, null, 2));
-    alert(`Version ${version} for ${application} saved successfully! Check console.`);
+    alert(`Version "${version}" for "${application}" saved successfully! Check console.`);
   };
 
   const tabs = [
@@ -953,154 +1248,98 @@ const VersionDesignerWorkspace = () => {
 
   if (!application || !version || !coreFields) {
     return (
-      <div style={{
-        padding: '40px',
-        textAlign: 'center',
-        color: '#64748b'
-      }}>
-        <h2>No version data found</h2>
-        <button
-          onClick={handleBack}
-          style={{
-            marginTop: '20px',
-            padding: '10px 20px',
-            backgroundColor: '#4f46e5',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer'
-          }}
-        >
-          Go Back to Version Designer
-        </button>
+      <div className="error-state">
+        <div className="error-content">
+          <h2 className="error-title">No Version Data Found</h2>
+          <p className="error-description">
+            The version designer requires application data to function properly.
+          </p>
+          <button
+            onClick={handleBack}
+            className="btn-primary"
+          >
+            ← Back to Version Designer
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{
-      backgroundColor: '#f8fafc',
-      minHeight: '100vh',
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-    }}>
-      <div style={{
-        maxWidth: '1400px',
-        margin: '0 auto',
-        padding: '20px',
-      }}>
-        {/* Back Button */}
+    <div className="version-designer-workspace">
+      {/* Back Button */}
+      <div className="back-button-container">
         <button
           onClick={handleBack}
-          style={{
-            marginBottom: '20px',
-            padding: '8px 16px',
-            backgroundColor: 'transparent',
-            color: '#4f46e5',
-            border: '1px solid #4f46e5',
-            borderRadius: '6px',
-            fontSize: '14px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
+          className="back-button"
         >
           ← Back to Version Designer
         </button>
+      </div>
 
-        {/* Header */}
-        <div style={{
-          backgroundColor: 'white',
-          padding: '15px 20px',
-          borderRadius: '8px 8px 0 0',
-          borderBottom: '1px solid #cbd5e1',
-          marginBottom: '0'
-        }}>
-          <h2 style={{
-            margin: 0,
-            color: '#334155',
-            fontSize: '18px',
-            fontWeight: '600'
-          }}>
+      {/* Header */}
+      <div className="workspace-header">
+        <div className="header-content">
+          {/* Action Buttons - Placed ABOVE the version title */}
+          <div className="action-buttons-container">
+            <ActionButtons
+              onBack={handleBack}
+              onHold={handleHold}
+              onValidate={handleValidate}
+              onCommit={handleCommit}
+              disabled={isCommitting}
+            />
+          </div>
+          
+          <h2 className="workspace-title">
             Version Designer / {application},{version}
           </h2>
+          
+          <div className="version-info">
+            <span className="info-item">
+              <span className="info-label">Fields:</span>
+              <span className="info-value">{Object.keys(selectedFields).length} selected</span>
+            </span>
+            <span className="info-item">
+              <span className="info-label">Available:</span>
+              <span className="info-value">{availableFields.length} remaining</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="workspace-container">
+        <div className="tabs-navigation">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* Tabs */}
-        <div style={{
-          backgroundColor: 'white',
-          borderRadius: '0 0 8px 8px',
-          overflow: 'hidden',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
-        }}>
-          <div style={{
-            display: 'flex',
-            backgroundColor: '#4f46e5',
-            overflowX: 'auto',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none'
-          }}>
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                style={{
-                  padding: '15px 25px',
-                  backgroundColor: activeTab === tab.id ? 'white' : 'transparent',
-                  border: 'none',
-                  color: activeTab === tab.id ? '#1e293b' : '#e0e7ff',
-                  fontSize: '14px',
-                  fontWeight: activeTab === tab.id ? '600' : '500',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  transition: 'all 0.2s',
-                  borderRight: '1px solid rgba(255, 255, 255, 0.1)'
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+        {/* Tab Content */}
+        <div className="tab-content-wrapper">
+          {tabs.find(tab => tab.id === activeTab)?.render()}
+        </div>
 
-          {/* Tab Content */}
-          <div>
-            {tabs.find(tab => tab.id === activeTab)?.render()}
-          </div>
-
-          {/* Save Button */}
-          <div style={{
-            padding: '20px',
-            backgroundColor: '#f8fafc',
-            borderTop: '1px solid #cbd5e1',
-            textAlign: 'center'
-          }}>
-            <button
-              onClick={saveVersion}
-              style={{
-                padding: '14px 40px',
-                fontSize: '16px',
-                fontWeight: '600',
-                backgroundColor: '#10b981',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                transition: 'all 0.3s'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#059669';
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = '#10b981';
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = 'none';
-              }}
-            >
-              Save Version
-            </button>
-          </div>
+        {/* Save Button */}
+        <div className="save-section">
+          <button
+            onClick={saveVersion}
+            className="save-button"
+            disabled={isCommitting}
+          >
+            <span className="save-icon">💾</span>
+            Save Version Configuration
+          </button>
+          <p className="save-note">
+            Save all configurations for version: {application},{version}
+          </p>
         </div>
       </div>
     </div>
