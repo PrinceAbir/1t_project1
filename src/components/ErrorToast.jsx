@@ -17,21 +17,7 @@ const ErrorToast = ({ message, buttonText, onButtonClick, onClose, override = fa
   const scrollToField = (fieldId) => {
     // Try several strategies to locate the field element
     let el = document.getElementById(fieldId) || document.querySelector(`[data-alt-id="${fieldId}"]`);
-    if (!el) {
-      // try swapping last two underscore-separated segments (handles alternate id patterns)
-      const parts = fieldId.split('_');
-      if (parts.length >= 3) {
-        const swapped = [...parts];
-        const a = swapped.length - 1;
-        const b = swapped.length - 2;
-        const tmp = swapped[a]; swapped[a] = swapped[b]; swapped[b] = tmp;
-        const swappedId = swapped.join('_');
-        el = document.getElementById(swappedId) || document.querySelector(`[data-alt-id="${swappedId}"]`);
-      }
-    }
-
-    // fallback: element whose id ends with fieldId
-    if (!el) el = document.querySelector(`[id$="${fieldId}"]`);
+    
     if (!el) return;
 
     // Ask components to expand/un-minimize if needed
@@ -60,13 +46,15 @@ const ErrorToast = ({ message, buttonText, onButtonClick, onClose, override = fa
   };
 
   return (
-    <div className="toast-container">
-      <div className="toast-box">
-
-        {/* Header */}
-        {isErrorArray && (
-          <div className="toast-header">
-            <span className="toast-error-count">Total Errors: {totalErrors}</span>
+  <div className="toast-container">
+    <div className="toast-box">
+      {/* Header with Close Button */}
+      <div className="toast-header">
+        <span className="toast-error-count">
+          {isErrorArray ? `Total Errors: ${totalErrors}` : "Validation Message"}
+        </span>
+        <div className="toast-header-actions">
+          {isErrorArray && (
             <span
               className="toast-minimize"
               role="button"
@@ -76,41 +64,9 @@ const ErrorToast = ({ message, buttonText, onButtonClick, onClose, override = fa
             >
               {minimized ? "▾" : "▴"}
             </span>
-          </div>
-        )}
+          
+        )}</div>
 
-        {/* Error List */}
-        {!minimized && (
-          <div className="toast-message">
-            {isErrorArray ? (
-              <div>
-                {message.map((err, index) => (
-                  <div
-                    key={index}
-                    className="toast-error-item"
-                    onClick={() => scrollToField(err.field)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => ["Enter", " "].includes(e.key) && scrollToField(err.field)}
-                  >
-                    • {err.message}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <span>{message}</span>
-            )}
-          </div>
-        )}
-
-        {/* Optional Button */}
-        {/* {override && buttonText && (
-          <button className="toast-button" onClick={onButtonClick}>
-            {buttonText}
-          </button>
-        )} */}
-
-        {/* Close */}
         <span
           className="toast-close"
           role="button"
@@ -121,8 +77,33 @@ const ErrorToast = ({ message, buttonText, onButtonClick, onClose, override = fa
           ×
         </span>
       </div>
+
+      {/* Message Content - Only show when not minimized */}
+      {!minimized && (
+        <div className="toast-message">
+          {isErrorArray ? (
+            <div>
+              {message.map((err, index) => (
+                <div
+                  key={index}
+                  className="toast-error-item"
+                  onClick={() => scrollToField(err.field)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => ["Enter", " "].includes(e.key) && scrollToField(err.field)}
+                >
+                  • <strong>{err.field}</strong>: {err.message}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <span>{message}</span>
+          )}
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
 };
 
 export default React.memo(ErrorToast);

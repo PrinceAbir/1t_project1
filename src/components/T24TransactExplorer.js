@@ -1,73 +1,107 @@
-// src/components/T24TransactExplorer.js (updated: handle mode prop for view/readOnly, integrate view logic, handle no metadata, memoize computations, disable actions in view)
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+// src/components/T24TransactExplorer.js
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react"; // ← Added useRef
 import ActionButtons from "./ActionButtons";
 import TabButton from "./TabButton";
 import FieldRenderer from "./FieldRenderer";
 import ValidationService from "../services/ValidationService";
 import DataTransformer from "../services/DataTransformer";
 import ErrorToast from "./ErrorToast";
-import META_MAP from "../metadata"; // dynamic metadata loader
-import "../App.css";
+import "../style/T24TransactExplorer.css";
 
-const T24TransactExplorer = ({ module, mode = 'create' }) => {
-  const metadata = META_MAP[module.toUpperCase()];
+const API_BASE = "http://localhost:5000/api/metadata";
+
+const getApiEndpoint = (module) => {
+  const map = {
+    customer: "customer",
+    funds: "fundtransfer",
+    account: "account",
+    deposit: "deposit",
+    lending: "lending",
+  };
+  return map[module] || module;
+};
+
+const T24TransactExplorer = ({ module, mode = "create" }) => {
+  // All hooks at the top
+  const [metadata, setMetadata] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [activeTab, setActiveTab] = useState("MAIN");
   const [formState, setFormState] = useState({});
   const [validationErrors, setValidationErrors] = useState({});
   const [tabErrors, setTabErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Toast
   const [toastMessage, setToastMessage] = useState("");
   const [toastButton, setToastButton] = useState(null);
   const [showToast, setShowToast] = useState(false);
 
-  const isViewMode = mode === 'view'; // Determine readOnly based on mode
+  const [columns, setColumns] = useState(1);
 
-  const triggerToast = useCallback((msg, btnText = null, btnAction = null) => {
-    setToastMessage(msg);
-    setToastButton(btnText ? { text: btnText, action: btnAction } : null);
-    setShowToast(true);
-  }, []);
-  const handleBackToHome = () => {
-    window.location.href = '/';
-  };
+  const isFetching = useRef(false); // Prevents double fetch in Strict Mode
 
+  const isViewMode = mode === "view";
 
-  // helper to build DOM IDs consistent with FieldRenderer
-  const buildFieldId = (tab, fieldId, index = null) =>
-    index === null ? `${tab}_${fieldId}` : `${tab}_${fieldId}_${index}`;
+  // Fetch metadata from API
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      if (isFetching.current) return; // Prevent duplicate in dev
+      isFetching.current = true;
+
+      const endpoint = getApiEndpoint(module);
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch(`${API_BASE}/${endpoint}`);
+        if (!response.ok) {
+          throw new Error(`Failed to load metadata (${response.status})`);
+        }
+
+        const data = await response.json();
+        console.log("Fetched Metadata:", data);
+        setMetadata(data);
+        setColumns(data?.columns ? Number(data.columns) || 1 : 1);
+      } catch (err) {
+        console.error("Metadata fetch error:", err);
+        setError(err.message || "Unable to connect to metadata server");
+      } finally {
+        setLoading(false);
+        isFetching.current = false;
+      }
+    };
+
+    fetchMetadata();
+  }, [module]);
 
   const t24FormData = useMemo(() => {
     if (!metadata) {
       return {
-        MAIN: { title: `No metadata for module: ${module}`, fields: [] },
+        MAIN: { fields: [], title: "" },
         AUDIT: { fields: [], title: "AUDIT" },
-        RESERVED: { fields: [], title: "RESERVED" }
+        RESERVED: { fields: [], title: "RESERVED" },
       };
     }
 
     return {
       MAIN: {
-        title: `${metadata.application.toUpperCase()} / ${metadata.type}`,
-        fields: DataTransformer.metadataToT24Fields(metadata)
+        title: `${
+          metadata.application?.toUpperCase() || module.toUpperCase()
+        } / ${metadata.type || ""}`,
+        fields: DataTransformer.metadataToT24Fields(metadata),
       },
       AUDIT: { fields: [], title: "AUDIT" },
-      RESERVED: { fields: [], title: "RESERVED" }
+      RESERVED: { fields: [], title: "RESERVED" },
     };
   }, [metadata, module]);
 
-  // columns: number of columns to display form fields in (1,2,3)
-  const [columns, setColumns] = useState(() => {
-    // default from metadata if provided, otherwise 1
-    try {
-      return metadata && metadata.columns ? Number(metadata.columns) || 1 : 1;
-    } catch (e) {
-      return 1;
-    }
-  });
-
+  // Initialize form state
   useEffect(() => {
     const initial = {};
     const err = {};
@@ -77,18 +111,20 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
       err[tab] = {};
 
       (t24FormData[tab].fields || []).forEach((f) => {
-        // initialize single or multi values
-        initial[tab][f.id] = f.multi ? (f.value || ['']) : (f.value ?? '');
-        // validationErrors shape uses field.id keys; values can be string or array
-        err[tab][f.id] = f.multi ? [] : '';
+        initial[tab][f.id] = f.multi ? f.value || [""] : f.value ?? "";
+        err[tab][f.id] = f.multi ? [] : "";
       });
     });
 
     setFormState(initial);
     setTabErrors(err);
-    setIsLoading(false);
   }, [t24FormData]);
 
+  const triggerToast = useCallback((msg, btnText = null, btnAction = null) => {
+    setToastMessage(msg);
+    setToastButton(btnText ? { text: btnText, action: btnAction } : null);
+    setShowToast(true);
+  }, []);
   // update columns if metadata changes (keeps dynamic behavior)
   useEffect(() => {
     if (metadata && metadata.columns) {
@@ -97,24 +133,33 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
     }
   }, [metadata, columns]);
 
-  const handleFieldChange = useCallback((fieldName, value) => {
-    setFormState((p) => ({
-      ...p,
-      [activeTab]: { ...p[activeTab], [fieldName]: value }
-    }));
+  const handleBackToHome = () => {
+    window.location.href = "/";
+  };
 
-    if (validationErrors[fieldName]) {
-      setValidationErrors((prev) => ({ ...prev, [fieldName]: Array.isArray(prev[fieldName]) ? [] : "" }));
-    }
-  }, [activeTab, validationErrors]);
+  const handleFieldChange = useCallback(
+    (fieldName, value) => {
+      setFormState((p) => ({
+        ...p,
+        [activeTab]: { ...p[activeTab], [fieldName]: value },
+      }));
+
+      if (validationErrors[fieldName]) {
+        setValidationErrors((prev) => ({
+          ...prev,
+          [fieldName]: Array.isArray(prev[fieldName]) ? [] : "",
+        }));
+      }
+    },
+    [activeTab, validationErrors]
+  );
 
   const handleValidate = useCallback(() => {
-    if (isViewMode) return true; // No validation in view
+    if (isViewMode) return true;
 
     const fields = t24FormData[activeTab].fields;
     const data = formState[activeTab] || {};
 
-    // build fieldConfigs expected by ValidationService
     const fieldConfigs = fields.map((f) => ({
       name: f.id,
       label: f.label,
@@ -127,7 +172,7 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
       options: f.metadata?.options ?? f.options,
       max_multifield: f.metadata?.max_multifield ?? f.max_multifield,
       decimals: f.metadata?.decimals ?? f.decimals,
-      pattern: f.metadata?.pattern ?? f.pattern
+      pattern: f.metadata?.pattern ?? f.pattern,
     }));
 
     const { errors, isValid } = ValidationService.validateAllFields(
@@ -135,70 +180,134 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
       data
     );
 
-    // Set inline validation errors to show next to fields
     setValidationErrors(errors);
+    setTabErrors((prev) => ({ ...prev, [activeTab]: !isValid }));
 
-    // Determine tab-level error flag
-    const tabHasError = !isValid;
-    setTabErrors((prev) => ({ ...prev, [activeTab]: tabHasError }));
-
-    // Build toast message array of { field: 'TAB_field(_index)', message }
     if (isValid) {
       triggerToast(`${activeTab} validation successful!`);
       return true;
     }
 
+    // === RESTORE ORIGINAL ERROR ARRAY TOAST ===
+    const buildFieldId = (tab, fieldId, index = null) =>
+      index === null ? `${tab}_${fieldId}` : `${tab}_${fieldId}_${index}`;
 
-
-    const toastErrors = Object.entries(errors).flatMap(([key, val]) => {
-      // val may be string, object (group child errors), or array for multi fields
-      if (Array.isArray(val)) {
-        return val.flatMap((msg, idx) => {
-          if (!msg) return [];
-          if (typeof msg === 'string' || msg.toString) {
-            const s = msg.toString();
-            if (s.trim()) return [{ field: buildFieldId(activeTab, key, idx), message: s }];
+    const toastErrors = Object.entries(errors)
+      .flatMap(([key, val]) => {
+        if (Array.isArray(val)) {
+          return val.flatMap((msg, idx) => {
+            if (!msg) return [];
+            if (typeof msg === "string" && msg.trim()) {
+              return [
+                { field: buildFieldId(activeTab, key, idx), message: msg },
+              ];
+            }
+            if (typeof msg === "object") {
+              return Object.entries(msg).flatMap(([childId, m]) =>
+                m
+                  ? [
+                      {
+                        field: `${buildFieldId(
+                          activeTab,
+                          key,
+                          idx
+                        )}_${childId}`,
+                        message: m,
+                      },
+                    ]
+                  : []
+              );
+            }
             return [];
-          }
-          if (typeof msg === 'object') {
-            return Object.entries(msg).flatMap(([childId, m]) => (m ? [{ field: `${buildFieldId(activeTab, key, idx)}_${childId}`, message: m }] : []));
-          }
-          return [];
-        }).filter(Boolean);
-      } else if (val && typeof val === 'object') {
-        // single group/object errors
-        return Object.entries(val).flatMap(([childId, childErr]) => {
-          if (!childErr) return [];
-          if (Array.isArray(childErr)) {
-            return childErr.flatMap((ce, idx) => (ce ? [{ field: `${buildFieldId(activeTab, key)}_${childId}_${idx}`, message: ce }] : []));
-          }
-          return [{ field: `${buildFieldId(activeTab, key)}_${childId}`, message: childErr }];
-        });
-      } else if (val && val.toString && val.toString().trim()) {
-        return [{ field: buildFieldId(activeTab, key), message: val }];
-      }
-      return [];
-    });
+          });
+        } else if (val && typeof val === "object") {
+          return Object.entries(val).flatMap(([childId, childErr]) => {
+            if (!childErr) return [];
+            if (Array.isArray(childErr)) {
+              return childErr.flatMap((ce, idx) =>
+                ce
+                  ? [
+                      {
+                        field: `${buildFieldId(
+                          activeTab,
+                          key
+                        )}_${childId}_${idx}`,
+                        message: ce,
+                      },
+                    ]
+                  : []
+              );
+            }
+            return [
+              {
+                field: `${buildFieldId(activeTab, key)}_${childId}`,
+                message: childErr,
+              },
+            ];
+          });
+        } else if (val && val.toString().trim()) {
+          return [{ field: buildFieldId(activeTab, key), message: val }];
+        }
+        return [];
+      })
+      .filter(Boolean);
 
     triggerToast(toastErrors, "View Errors");
     return false;
   }, [activeTab, formState, t24FormData, triggerToast, isViewMode]);
 
+  
   const handleCommit = () => {
     if (isViewMode) return;
     if (handleValidate()) {
-      const result = DataTransformer.toT24Submission(
-        formState[activeTab],
-        { fields: t24FormData[activeTab].fields }
-      );
-      console.log("T24 Commit:", result);
-      triggerToast("Committed successfully");
+      const result = DataTransformer.toT24Submission(formState[activeTab], {
+        fields: t24FormData[activeTab].fields,
+      });
+      console.log("T24 Commit Payload:", result);
+      triggerToast("Transaction committed successfully");
     }
   };
-  const handleHold = () => triggerToast("Held");
+
+  const handleHold = () => triggerToast("Transaction held");
   const handleBack = () => handleBackToHome();
 
-  if (isLoading) return <div className="loading">Loading...</div>;
+  // Conditional rendering after hooks
+  if (loading) {
+    return (
+      <div
+        style={{
+          padding: "60px",
+          textAlign: "center",
+          fontSize: "16px",
+          color: "#666",
+        }}
+      >
+        Loading {module.toUpperCase()} metadata from server...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: "60px", textAlign: "center", color: "#e53e3e" }}>
+        <h3>Metadata Load Failed</h3>
+        <p>{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            padding: "12px 24px",
+            background: "#4299e1",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   if (!metadata) return <div>No metadata for module: {module}</div>;
 
@@ -207,7 +316,6 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
 
   return (
     <div className="t24-transact-explorer">
-      {/* Toast */}
       {showToast && (
         <ErrorToast
           message={toastMessage}
@@ -218,7 +326,6 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
         />
       )}
 
-      {/* Tab Navigation */}
       <div className="t24-tab-navigation">
         {Object.keys(t24FormData).map((tab) => (
           <TabButton
@@ -231,37 +338,45 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
         ))}
       </div>
 
-      {/* Main Form */}
       <div className="t24-main-content">
         <div className="t24-title-section">
-            <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
-              <div className="t24-form-title">{currentTab.title}</div>
-              <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
-                <label style={{fontSize:12, color:'#333', fontWeight:600}}>Columns</label>
-                <select
-                  value={columns}
-                  onChange={(e) => setColumns(Number(e.target.value) || 1)}
-                  style={{padding:'6px 8px', borderRadius:4, border:'1px solid #cfd8dc'}}
-                >
-                  <option value={1}>1</option>
-                  <option value={2}>2</option>
-                  <option value={3}>3</option>
-                </select>
-              </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div className="t24-form-title">{currentTab.title}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <label style={{ fontSize: 12, color: "#333", fontWeight: 600 }}>
+                Columns
+              </label>
+              <select
+                value={columns}
+                onChange={(e) => setColumns(Number(e.target.value) || 1)}
+                style={{
+                  padding: "6px 8px",
+                  borderRadius: 4,
+                  border: "1px solid #cfd8dc",
+                }}
+              >
+                <option value={1}>1</option>
+                <option value={2}>2</option>
+                <option value={3}>3</option>
+              </select>
             </div>
+          </div>
 
           <ActionButtons
             onBack={handleBack}
             onHold={handleHold}
             onValidate={handleValidate}
             onCommit={handleCommit}
-            disabled={!currentTab || isViewMode} // Disable in view mode
+            disabled={!currentTab || isViewMode}
           />
         </div>
 
         <div className="t24-form-container">
           <div
-            className={`t24-form-grid t24-form ${'cols-' + (Number(columns) || 1)}`}
+            className="t24-form-grid"
+            style={{
+              gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+            }}
           >
             {currentTab.fields.map((field) => (
               <FieldRenderer
@@ -271,7 +386,7 @@ const T24TransactExplorer = ({ module, mode = 'create' }) => {
                 onChange={handleFieldChange}
                 error={validationErrors[field.id]}
                 tabId={activeTab}
-                readOnly={isViewMode} // Pass readOnly based on mode
+                readOnly={isViewMode}
               />
             ))}
           </div>

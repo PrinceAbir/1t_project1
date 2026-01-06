@@ -1,107 +1,596 @@
-.t24-form-field{
-	margin-bottom:14px;
-	font-family:Segoe UI,Arial,Helvetica,sans-serif;
+/* FieldRenderer.css */
+.t24-form-field {
+  margin-bottom: 20px;
+  font-family: Segoe UI, Arial, Helvetica, sans-serif;
 }
-.t24-label{
-	display:block;
-	font-weight:600;
-	margin-bottom:6px;
-	color:#0b3b61;
+
+.t24-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #0b3b61;
 }
-.required-asterisk{color:#d93025;margin-left:4px}
-.t24-input-container{display:flex;flex-direction:column}
-.t24-input{
-	width:100%;
-	padding:8px 10px;
-	border:1px solid #cfd8e3;
-	border-radius:4px;
-	background:#fff;
-	font-size:14px;
+
+.required-asterisk {
+  color: #d93025;
+  margin-left: 4px;
 }
-/* custom dropdown styles */
-.custom-dropdown{position:relative}
-.custom-dropdown-toggle{display:flex;justify-content:space-between;align-items:center}
-.custom-dropdown .caret{margin-left:8px;color:#65737e}
-.custom-dropdown-menu{position:absolute;z-index:20;left:0;right:0;background:#fff;border:1px solid #e6eef6;border-radius:6px;max-height:220px;overflow:auto;box-shadow:0 6px 18px rgba(11,59,97,0.08);margin-top:6px}
-.custom-dropdown-item{padding:8px 10px;cursor:pointer}
-.custom-dropdown-item{padding:8px 10px;cursor:pointer}
-.custom-dropdown-item .item-label{font-weight:600;color:#0b3b61}
-.custom-dropdown-item .item-detail{font-size:12px;color:#6b7280;margin-top:4px}
-.custom-dropdown-item.highlight,.custom-dropdown-item:hover{background:#f0f6ff}
 
-.custom-dropdown-toggle .item-label{font-weight:600}
-.custom-dropdown-toggle .item-detail{font-size:11px;color:#6b7280}
-
-/* dropdown table */
-.dropdown-table{width:100%;border-collapse:collapse}
-.dropdown-table th{background:#f7fbff;padding:8px;border-bottom:1px solid #e6eef6;font-weight:600;color:#0b3b61;font-size:12px;text-align:left}
-.dropdown-table td{padding:8px;border-bottom:1px solid #eef6ff;font-size:13px;color:#111}
-.dropdown-table tr.highlight td{background:#eef7ff}
-
-/* char counter for max length */
-.char-counter{position:absolute;right:8px;bottom:6px;font-size:12px;color:#8b9096}
-
-.minimize-field-btn{border:none;background:#fff;border-radius:50%;width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;margin-left:8px;cursor:pointer;border:1px solid #e6eef6;color:#0b3b61;font-weight:700}
-.minimize-field-btn:hover{background:#f3f8ff}
-.field-minimized-row{display:flex;align-items:center;gap:8px}
-.field-minimized-preview{color:#333;padding:8px 12px;background:#fbfdff;border:1px solid #eef6ff;border-radius:6px;flex:1}
-.t24-input.error{border-color:#d93025;box-shadow:0 0 0 3px rgba(217,48,37,0.06)}
-.t24-error{color:#d93025;font-size:12px;margin-top:6px}
-.multi-fields-container,.group-fields-container{display:flex;flex-direction:column;gap:8px}
-.multi-field-row,.group-child-row{display:flex;align-items:center;gap:8px}
-.add-multi-field{background:#0b5fff;color:#fff;border:none;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;margin-top:12px}
-.add-multi-field:hover{background:#094ecc}
-.remove-multi-field{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:34px;padding:0;border-radius:50%;border:none;background:#fff;cursor:pointer;color:#d93025;font-weight:700;font-size:16px;border:1px solid rgba(217,48,37,0.12);margin-left:8px}
-.remove-multi-field:hover{background:#fbeaea;box-shadow:0 2px 6px rgba(217,48,37,0.12)}
-.remove-multi-field .remove-icon{line-height:1}
-.remove-multi-field:focus{outline:2px solid rgba(11,59,97,0.12)}
-.remove-attachment{background:#fff;border:1px solid #d1dde9;padding:6px 8px;border-radius:4px;cursor:pointer;font-size:13px}
-.attachment-list{margin-top:8px;display:flex;flex-direction:column;gap:6px}
-.attachment-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px;border:1px solid #eef3f9;border-radius:4px;background:#fff}
-.group-instance{
-	border:1px solid #e6edf5;
-	padding:6px 8px;
-	border-radius:6px;
-	background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
-	box-shadow:0 1px 0 rgba(11,59,97,0.02);
+.t24-input-container {
+  display: flex;
+  flex-direction: column;
 }
-.group-instance.collapsed{opacity:0.9}
-.minimize-btn{border:none;background:transparent;padding:6px 8px;cursor:pointer;font-size:14px;color:#0b3b61}
-.group-minimized{font-size:13px}
 
-/* Table layout for group fields */
-.group-table{width:100%;border-collapse:collapse;background:transparent}
-.group-table th{background:#f7fbff;padding:10px;border:1px solid #e6eef6;text-align:left;color:#0b3b61}
-.group-table td{padding:8px;border:1px solid #eef6ff;vertical-align:middle}
-.group-table .row-actions{width:120px;text-align:center}
-.group-minimized-cell{padding:10px;color:#666}
-.group-instance-row.collapsed td{background:#fbfdff}
-.group-actions{margin-top:8px;display:flex;justify-content:flex-end}
-.group-fields-container{background:transparent;padding:6px;border-radius:6px}
-.multi-fields-container{background:transparent;padding:4px}
+/* Base input style - T24 underline style for ALL inputs */
+.t24-input,
+input.t24-input,
+select.t24-input,
+textarea.t24-input {
+  width: 100%;
+  padding: 8px 0;
+  border: none;
+  border-bottom: 1px solid #b0bec5;
+  background: transparent;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease;
+  border-radius: 0;
+  box-sizing: border-box;
+}
 
-/* Layout fixes so labels don't wrap into two lines inside groups */
-.group-children{display:flex;flex-direction:column;gap:8px}
-.group-child-row{display:flex;align-items:center;gap:12px}
-.group-child-row label{flex:0 0 170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:#0b3b61}
-.group-child-row .t24-input{flex:1;min-width:0}
-.sr-only{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}
+.t24-input:focus,
+input.t24-input:focus,
+select.t24-input:focus,
+textarea.t24-input:focus {
+  border-bottom-color: #0b5fff;
+  box-shadow: 0 1px 0 0 #0b5fff;
+}
 
-/* Optional form grid container. Wrap multiple `t24-form-field` items in a container
-	with class `t24-form` to enable 1/2/3 column layouts. You can force a specific
-	column count by adding `cols-1`, `cols-2` or `cols-3` on the same container. */
-.t24-form{display:grid;grid-template-columns:repeat(1,1fr);gap:16px}
-.t24-form.cols-1{grid-template-columns:repeat(1,1fr)}
-.t24-form.cols-2{grid-template-columns:repeat(2,1fr)}
-.t24-form.cols-3{grid-template-columns:repeat(3,1fr)}
+.t24-input.error,
+input.t24-input.error,
+select.t24-input.error,
+textarea.t24-input.error {
+  border-bottom-color: #d93025;
+  box-shadow: 0 1px 0 0 #d93025;
+}
 
-/* Responsive defaults: 1 column on small, 2 on medium, 3 on large screens */
-@media (min-width:600px){.t24-form{grid-template-columns:repeat(2,1fr)}}
-@media (min-width:1000px){.t24-form{grid-template-columns:repeat(3,1fr)}}
+.t24-input:disabled,
+input.t24-input:disabled,
+select.t24-input:disabled,
+textarea.t24-input:disabled {
+  background: transparent;
+  color: #888;
+  border-bottom-style: dashed;
+  border-bottom-color: #b0bec5;
+}
 
-/* Ensure individual fields stretch correctly inside grid cells */
-.t24-form .t24-form-field{width:100%}
+/* Remove native select arrow and apply underline style */
+select.t24-input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 24px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230b5fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right center;
+  background-size: 16px;
+}
 
-/* Support for T24TransactExplorer's grid wrapper */
-.t24-form-grid{display:grid;gap:16px;align-items:start}
-.t24-form-grid > .t24-form-field{width:100%}
+/* Error text */
+.t24-error {
+  color: #d93025;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* Multi containers */
+.multi-fields-container,
+.group-fields-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Row alignment for multi fields - buttons stay on same line */
+.multi-field-row {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+/* Input wrapper with inline button */
+.input-with-button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  position: relative;
+}
+
+/* Remove button positioned at end of input */
+.multi-field-row .remove-multi-field {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+}
+
+/* Group child row - fixed alignment */
+.group-child-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.group-child-row label {
+  flex: 0 0 170px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  color: #0b3b61;
+  text-align: right;
+  padding-right: 12px;
+}
+
+.group-child-row .t24-input-container {
+  flex: 1;
+  min-width: 0;
+}
+
+/* === CONSISTENT MINIMAL ADD BUTTON (used everywhere) === */
+.add-multi-field {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0b5fff;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  height: 36px;
+  margin-top: 4px;
+}
+
+.add-multi-field::before {
+  content: "+";
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1;
+  margin-right: 4px;
+}
+
+.add-multi-field:hover {
+  background: #f0f6ff;
+  color: #094ecc;
+}
+
+.add-multi-field:active {
+  background: #e6f0ff;
+}
+
+/* === CONSISTENT MINIMAL REMOVE BUTTON (used everywhere) === */
+.remove-multi-field {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid #e6edf5;
+  background: #ffffff;
+  cursor: pointer;
+  color: #d93025;
+  font-weight: 700;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.remove-multi-field:hover {
+  background: #fff5f5;
+  border-color: #fad4d4;
+  box-shadow: 0 2px 4px rgba(217, 48, 37, 0.08);
+}
+
+.remove-multi-field:active {
+  background: #feefef;
+}
+
+.remove-multi-field .remove-icon {
+  line-height: 1;
+}
+
+/* === NESTED MULTI FIELDS INSIDE GROUPS - FIXED AND CONSISTENT === */
+.group-child-multi-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.group-child-multi-container > .t24-label {
+  display: block;
+  margin-bottom: 6px;
+  text-align: right;
+  padding-right: 12px;
+  width: 170px;
+  float: left;
+}
+
+.group-child-multi-container .multi-fields-container {
+  margin-left: 186px; /* 170px label width + 16px gap */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.group-child-multi-container .multi-field-row {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.group-child-multi-container .input-with-button {
+  width: 100%;
+}
+
+.group-child-multi-container .t24-input {
+  flex: 1;
+  min-width: 0;
+  padding-right: 36px; /* Space for remove button */
+}
+
+.group-child-multi-container .add-multi-field {
+  margin-left: 186px;
+  margin-top: 8px;
+}
+
+/* Clear float */
+.group-child-multi-container::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Group instance styling */
+.group-instance {
+  border: 1px solid #e6edf5;
+  padding: 16px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  margin-bottom: 16px;
+}
+
+.group-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.group-children {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Attachments */
+.remove-attachment {
+  background: #fff;
+  border: 1px solid #d1dde9;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #4a5568;
+  margin-left: 8px;
+}
+
+.remove-attachment:hover {
+  background: #f7fafc;
+}
+
+.attachment-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #eef3f9;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 13px;
+}
+
+/* Custom dropdown with underline style */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.custom-dropdown-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 8px 0;
+  border: none;
+  border-bottom: 1px solid #b0bec5;
+  background: transparent;
+  font-size: 14px;
+  outline: none;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 0;
+  transition: border-color 0.2s ease;
+}
+
+.custom-dropdown-toggle:hover {
+  border-bottom-color: #0b5fff;
+}
+
+.custom-dropdown-toggle.open {
+  border-bottom-color: #0b5fff;
+}
+
+.custom-dropdown-toggle.error {
+  border-bottom-color: #d93025;
+}
+
+.custom-dropdown .caret {
+  margin-left: 8px;
+  color: #65737e;
+}
+
+.custom-dropdown-menu {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #e6eef6;
+  border-radius: 6px;
+  max-height: 220px;
+  overflow: auto;
+  box-shadow: 0 6px 18px rgba(11, 59, 97, 0.08);
+  margin-top: 6px;
+}
+
+.custom-dropdown-item {
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.custom-dropdown-item .item-label {
+  font-weight: 600;
+  color: #0b3b61;
+}
+
+.custom-dropdown-item .item-detail {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.custom-dropdown-item.highlight,
+.custom-dropdown-item:hover {
+  background: #f0f6ff;
+}
+
+.dropdown-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dropdown-table th {
+  background: #f7fbff;
+  padding: 8px;
+  border-bottom: 1px solid #e6eef6;
+  font-weight: 600;
+  color: #0b3b61;
+  font-size: 12px;
+  text-align: left;
+}
+
+.dropdown-table td {
+  padding: 8px;
+  border-bottom: 1px solid #eef6ff;
+  font-size: 13px;
+  color: #111;
+}
+
+.dropdown-table tr.highlight td {
+  background: #eef7ff;
+}
+
+/* Textarea with underline style */
+textarea.t24-input {
+  border: none;
+  border-bottom: 1px solid #b0bec5;
+  padding: 8px 0;
+  background: transparent;
+  resize: vertical;
+  min-height: 60px;
+}
+
+textarea.t24-input:focus {
+  border-bottom-color: #0b5fff;
+  box-shadow: 0 1px 0 0 #0b5fff;
+}
+
+/* Textarea minimize */
+.minimize-field-btn {
+  border: none;
+  background: #fff;
+  border-radius: 4px;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  cursor: pointer;
+  border: 1px solid #e6eef6;
+  color: #0b3b61;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.minimize-field-btn:hover {
+  background: #f3f8ff;
+}
+
+.field-minimized-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.field-minimized-preview {
+  color: #333;
+  padding: 8px 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #eef6ff;
+  flex: 1;
+  font-style: italic;
+}
+
+/* File input with underline style */
+input[type="file"].t24-input {
+  border: none;
+  border-bottom: 1px solid #b0bec5;
+  padding: 8px 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="file"].t24-input:focus {
+  border-bottom-color: #0b5fff;
+  box-shadow: 0 1px 0 0 #0b5fff;
+}
+
+/* Number input with underline style */
+input[type="number"].t24-input {
+  border: none;
+  border-bottom: 1px solid #b0bec5;
+  padding: 8px 0;
+  background: transparent;
+}
+
+input[type="number"].t24-input:focus {
+  border-bottom-color: #0b5fff;
+  box-shadow: 0 1px 0 0 #0b5fff;
+}
+
+/* Date input with underline style */
+input[type="date"].t24-input {
+  border: none;
+  border-bottom: 1px solid #b0bec5;
+  padding: 8px 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="date"].t24-input:focus {
+  border-bottom-color: #0b5fff;
+  box-shadow: 0 1px 0 0 #0b5fff;
+}
+
+/* Email input with underline style */
+input[type="email"].t24-input {
+  border: none;
+  border-bottom: 1px solid #b0bec5;
+  padding: 8px 0;
+  background: transparent;
+}
+
+input[type="email"].t24-input:focus {
+  border-bottom-color: #0b5fff;
+  box-shadow: 0 1px 0 0 #0b5fff;
+}
+
+/* Tel input with underline style */
+input[type="tel"].t24-input {
+  border: none;
+  border-bottom: 1px solid #b0bec5;
+  padding: 8px 0;
+  background: transparent;
+}
+
+input[type="tel"].t24-input:focus {
+  border-bottom-color: #0b5fff;
+  box-shadow: 0 1px 0 0 #0b5fff;
+}
+
+/* Specific input types to ensure they have underline style */
+input[type="text"].t24-input,
+input[type="password"].t24-input,
+input[type="search"].t24-input,
+input[type="url"].t24-input {
+  border: none;
+  border-bottom: 1px solid #b0bec5;
+  padding: 8px 0;
+  background: transparent;
+}
+
+input[type="text"].t24-input:focus,
+input[type="password"].t24-input:focus,
+input[type="search"].t24-input:focus,
+input[type="url"].t24-input:focus {
+  border-bottom-color: #0b5fff;
+  box-shadow: 0 1px 0 0 #0b5fff;
+}
+
+/* Grid layout support */
+.t24-form {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 16px;
+}
+
+.t24-form.cols-1 { grid-template-columns: repeat(1, 1fr); }
+.t24-form.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.t24-form.cols-3 { grid-template-columns: repeat(3, 1fr); }
+
+@media (min-width: 600px) {
+  .t24-form { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 1000px) {
+  .t24-form { grid-template-columns: repeat(3, 1fr); }
+}
+
+.t24-form .t24-form-field { width: 100%; }
+
+.t24-form-grid {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+.t24-form-grid > .t24-form-field { width: 100%; }
+
+.sr-only {
+  position: absolute !important;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  clip: rect(1px, 1px, 1px, 1px);
+  white-space: nowrap;
+}

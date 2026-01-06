@@ -1,10 +1,13 @@
-// src/App.js (updated with both route patterns)
-import React, { lazy, Suspense } from 'react';
-import './App.css';
+import React, { lazy, Suspense } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import "./App.css";
 
-let Router = ({ children }) => <>{children}</>;
-let Routes = ({ children }) => <>{children}</>;
-let Route = ({ element }) => element;
+
+const HomePage = lazy(() => import("./components/Homepage"));
+const MainApp = lazy(() => import("./components/MainApp"));
+const MetadataPage= lazy(() => import("./components/MetadataPage"));
+const MetadataAddOnlyPage= lazy(() => import("./components/MetadataAddOnlyPage"));
+
 
 try {
   const rr = require('react-router-dom');
@@ -15,9 +18,6 @@ try {
   // ignore
 }
 
-const HomePage = lazy(() => import('./components/Homepage'));
-const MainApp = lazy(() => import('./components/MainApp'));
-const MetaBuilder = lazy(() => import('./components/MetaBuilder'));
 const ETDDesigner = lazy(() => import('./ETD/ETDDesigner'));
 const VersionDesignerHome = lazy(() => import('./version/VersionDesignerHome'));
 const VersionDesignerWorkspace = lazy(() => import('./version/VersionDesignerWorkspace'));
@@ -29,7 +29,24 @@ function App() {
         <Suspense fallback={<div>Loading...</div>}>
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/meta-builder" element={<MetaBuilder />} />
+            <Route path="/mainapp/:module" element={<MainApp />} />{" "}
+            <Route path="/metadata/:module" element={<MetadataPage />} />
+            <Route
+              path="/metadata-add/:module"
+              element={<MetadataAddOnlyPage />}
+            />
+            <Route
+              path="*"
+              element={
+                <div>
+                  404 - Page Not Found.{" "}
+                  <button onClick={() => (window.location.href = "/")}>
+                    Go Home
+                  </button>
+                </div>
+              }
+            />{" "}
+          
 
             {/* Version Designer Routes - Support both patterns */}
             {/* Pattern 1: Without /mainapp/ prefix */}

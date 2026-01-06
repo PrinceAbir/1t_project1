@@ -7,17 +7,18 @@ import RecordDataService from "../services/RecordDataService";
 import "./MainApp.css";
 
 const MainApp = () => {
-  const { module: moduleParam } = useParams(); // Use path param for module
+  const { module: moduleParam } = useParams();
   const navigate = useNavigate();
+
   const [recordId, setRecordId] = useState("");
   const [activeRecord, setActiveRecord] = useState(null);
-  const [appMode, setAppMode] = useState("create"); // 'create', 'edit', 'view'
+  const [appMode, setAppMode] = useState("create");
   const [recentRecords, setRecentRecords] = useState([]);
-  const [currentModule, setCurrentModule] = useState("customer"); // Default module
-  const [recordData, setRecordData] = useState(null); // Store actual record data
+  const [currentModule, setCurrentModule] = useState("customer");
+  const [recordData, setRecordData] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
 
-  // Get module from params or default, handle invalid module edge case
+  // Handle module validation and load recent records
   useEffect(() => {
     if (
       moduleParam &&
@@ -27,12 +28,10 @@ const MainApp = () => {
     ) {
       setCurrentModule(moduleParam);
     } else {
-      // Edge case: invalid module, redirect to home
       alert("Invalid module. Redirecting to home.");
       navigate("/");
     }
 
-    // Load recent records from localStorage, handle parse errors
     try {
       const savedRecords = JSON.parse(
         localStorage.getItem("t24_recent_records") || "[]"
@@ -40,7 +39,7 @@ const MainApp = () => {
       setRecentRecords(savedRecords.length > 0 ? savedRecords : []);
     } catch (error) {
       console.error("Error parsing recent records:", error);
-      setRecentRecords([]); // Fallback to empty
+      setRecentRecords([]);
     }
   }, [moduleParam, navigate]);
 
@@ -58,10 +57,9 @@ const MainApp = () => {
       isNew: true,
     };
 
-    // Save to recent records, limit to 5, handle duplicates
     const updatedRecords = [
       newRecord,
-      ...recentRecords.filter((record) => record.id !== newRecord.id),
+      ...recentRecords.filter((r) => r.id !== newRecord.id),
     ].slice(0, 5);
 
     setRecentRecords(updatedRecords);
@@ -85,7 +83,6 @@ const MainApp = () => {
       return;
     }
 
-    // Find existing record or create new for editing, handle no match
     const existingRecord = recentRecords.find(
       (record) =>
         record.id === recordId ||
@@ -115,17 +112,16 @@ const MainApp = () => {
       return;
     }
 
-    // Search for record in available data
     const foundRecordData = RecordDataService.getRecordById(
       currentModule,
       recordId
     );
 
     if (foundRecordData) {
-      // Found in available data - normalize id (support top-level id or id inside record)
       const normalizedId =
         foundRecordData.id || foundRecordData.record?.id || recordId;
       const normalizedRecordData = { ...foundRecordData, id: normalizedId };
+
       setRecordData(normalizedRecordData);
       setActiveRecord({
         id: normalizedId,
@@ -136,7 +132,6 @@ const MainApp = () => {
       setAppMode("view");
       setRecordId("");
     } else {
-      // Not found in available data
       alert(
         `Record "${recordId}" not found for ${getModuleName()} module. Available records: ${
           RecordDataService.getAvailableRecords(currentModule)
@@ -150,6 +145,7 @@ const MainApp = () => {
   const handleClear = () => {
     setRecordId("");
   };
+
   const handleSettings = () => {
     setShowSettings(!showSettings);
   };
@@ -180,16 +176,32 @@ const MainApp = () => {
 
   return (
     <div className="main-app">
+      {/* Header */}
+      <header className="ma-header">
+        <div className="ma-header-left">
+          <button className="back-home-btn" onClick={() => navigate("/")}>
+            ← Home
+          </button>
+          <div className="app-info">
+         
+            <span className="app-name">
+              {getModuleName().toUpperCase()} APPLICATION
+            </span>
+          </div>
+        </div>
+      </header>
+
       {/* Main Content */}
       <main className="ma-main">
         {!activeRecord ? (
           <>
-            {/* Record Input Section */}
             <div className="record-input-section">
               <div className="input-container">
                 <div className="input-group">
                   <div className="input-label-row">
-                    <label htmlFor="recordInput">{getModuleName().toUpperCase()}</label>
+                    <label htmlFor="recordInput">
+                      {getModuleName().toUpperCase()}
+                    </label>
                   </div>
                   <div className="input-field">
                     <input
@@ -197,10 +209,17 @@ const MainApp = () => {
                       type="text"
                       value={recordId}
                       onChange={(e) => setRecordId(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleCreate();
+                        }
+                      }}
                       placeholder={getPlaceholder()}
                       className="record-input"
                       autoComplete="off"
                     />
+
                     <div className="input-actions">
                       <button
                         className="action-btn create-btn"
@@ -240,6 +259,26 @@ const MainApp = () => {
                         <span className="btn-icon">⚙️</span>
                         <span className="btn-text">Settings</span>
                       </button>
+
+                      {/* New: Navigate to Full Metadata Editor Page */}
+                      <button
+                        className="action-btn metadata-btn"
+                        onClick={() => navigate(`/metadata/${currentModule}`)}
+                        title="Open Full-Screen Metadata Editor"
+                      >
+                        <span className="btn-icon">📋</span>
+                        <span className="btn-text">Metadata Editor</span>
+                      </button>
+
+
+                       <button
+                        className="action-btn metadata-btn"
+                        onClick={() => navigate(`/metadata-add/${currentModule}`)}
+                        title="Open Full-Screen Metadata Add-Only Page"
+                      >
+                        <span className="btn-icon">*</span>
+                        <span className="btn-text">Core-Metadta</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -247,7 +286,6 @@ const MainApp = () => {
             </div>
           </>
         ) : (
-          /* T24 Transact Explorer View */
           <div className="explorer-view">
             <div className="explorer-header">
               <button
@@ -288,7 +326,7 @@ const MainApp = () => {
                 <T24TransactExplorer
                   module={currentModule}
                   recordId={activeRecord.id}
-                  mode={appMode}
+                  appMode={appMode}
                 />
               )}
             </div>
@@ -299,4 +337,4 @@ const MainApp = () => {
   );
 };
 
-export default React.memo(MainApp); // Memoized for efficiency
+export default React.memo(MainApp);

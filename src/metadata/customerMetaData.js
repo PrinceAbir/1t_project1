@@ -11,12 +11,7 @@ const customerMetaData = {
       "mandatory": true,
       "min_length": 2,
       "max_length": 100,
-      "max_multifield": 3,
-      "dropdown": {
-        "source": "sector",
-        "type": "application",
-        "selecttion": "SELECT customer WHERE description CONTAINS ''"
-      }
+      "position": [1,1],
     },
     "customer.name.2": {
       "field_name": "customer_name_2",
@@ -24,7 +19,7 @@ const customerMetaData = {
       "type": "string",
       "multivalued": false,
       "mandatory": false,
-      "max_length": 100
+      "max_length": 100,
     },
     "short.name": {
       "field_name": "short_name",
@@ -33,161 +28,210 @@ const customerMetaData = {
       "multivalued": false,
       "mandatory": true,
       "min_length": 2,
-      "max_length": 35
+      "max_length": 35,
     },
-    "mnemonic": {
-      "field_name": "mnemonic",
-      "label": "Mnemonic",
-      "type": "string",
+    "category": {
+      "field_name": "category",
+      "label": "Customer Category",
+      "type": "select",
       "multivalued": false,
-      "mandatory": true
+      "mandatory": true,
     },
-    "street": {
-      "field_name": "street",
-      "label": "Street",
-      "type": "string",
+    "residency": {
+      "field_name": "residency",
+      "label": "Residency",
+      "type": "select",
       "multivalued": false,
-      "mandatory": false
-    },
-    "address.line.1": {
-      "field_name": "address_line_1",
-      "label": "Address 1",
-      "type": "string",
-      "multivalued": false,
-      "mandatory": false
-    },
-    "town.city": {
-      "field_name": "town_city",
-      "label": "Town Country",
-      "type": "string",
-      "multivalued": false,
-      "mandatory": false
-    },
-    "postal.code": {
-      "field_name": "postal_code",
-      "label": "Post Code",
-      "type": "string",
-      "multivalued": false,
-      "mandatory": false
-    },
-    "country": {
-      "field_name": "country",
-      "label": "Country",
-      "type": "dropdown",
-      "dropdown": {
-        "source": "country",
-        "type": "application",
-        "selecttion": "SELECT customer WHERE description CONTAINS ''"
-      },
-      "multivalued": false,
-      "mandatory": false
-    },
-    "sector": {
-      "field_name": "sector",
-      "label": "Sector",
-      "type": "dropdown",
-      "dropdown": {
-        "source": "sector",
-        "type": "application",
-        "selecttion": "SELECT customer WHERE description CONTAINS ''"
-      },
-      "multivalued": false,
-      "mandatory": false
-    },
-    "account.officer": {
-      "field_name": "account_officer",
-      "label": "Account Officer",
-      "type": "dropdown",
-      "dropdown": {
-        "source": "accountOfficer",
-        "type": "application",
-        "selecttion": "SELECT customer WHERE description CONTAINS ''"
-      },
-      "multivalued": false,
-      "mandatory": false
-    },
-    "other.officer.1": {
-      "field_name": "other_officer_1",
-      "label": "Other Officer 1",
-      "type": "dropdown",
-      "dropdown": {
-        "source": "accountOfficer",
-        "type": "application",
-        "selecttion": "SELECT customer WHERE description CONTAINS ''"
-      },
-      "multivalued": false,
-      "mandatory": false
-    },
-    "industry": {
-      "field_name": "industry",
-      "label": "Industry",
-      "type": "dropdown",
-      "dropdown": {
-        "source": "industry",
-        "type": "application",
-        "selecttion": "SELECT customer WHERE description CONTAINS ''"
-      },
-      "multivalued": false,
-      "mandatory": false
-    },
-    "target": {
-      "field_name": "target",
-      "label": "Target",
-      "type": "string",
-      "multivalued": false,
-      "mandatory": false
+      "mandatory": true,
     },
     "nationality": {
       "field_name": "nationality",
       "label": "Nationality",
-      "type": "dropdown",
-      "dropdown": {
-        "source": "nationality",
-        "type": "application",
-        "selecttion": "SELECT customer WHERE description CONTAINS ''"
-      },
+      "type": "select",
       "multivalued": false,
-      "mandatory": true
+      "mandatory": true,
+    },
+    "legal.form": {
+      "field_name": "legal_form",
+      "label": "Legal Form",
+      "type": "select",
+      "multivalued": false,
+      "mandatory": false,
+    },
+    "date.birth.incorp": {
+      "field_name": "date_birth_or_incorporation",
+      "label": "Date of Birth / Incorporation",
+      "type": "date",
+      "multivalued": false,
+      "mandatory": true,
+    },
+    "id.type": {
+      "field_name": "id_type",
+      "label": "Identification Type",
+      "type": "select",
+      "multivalued": false,
+      "mandatory": true,
+    },
+    "id.number": {
+      "field_name": "id_number",
+      "label": "ID Number",
+      "type": "string",
+      "multivalued": false,
+      "mandatory": true,
+      "min_length": 3,
+      "max_length": 50,
+    },
+    "id.issue.date": {
+      "field_name": "id_issue_date",
+      "label": "ID Issue Date",
+      "type": "date",
+      "multivalued": false,
+      "mandatory": false,
+    },
+    "id.expiry.date": {
+      "field_name": "id_expiry_date",
+      "label": "ID Expiry Date",
+      "type": "date",
+      "multivalued": false,
+      "mandatory": false,
+    },
+    "industry.sector": {
+      "field_name": "industry_sector",
+      "label": "Industry Sector",
+      "type": "select",
+      "multivalued": false,
+      "mandatory": false,
+    },
+    "employer.name": {
+      "field_name": "employer_name",
+      "label": "Employer Name",
+      "type": "string",
+      "multivalued": false,
+     "mandatory": false,
+      "max_length": 100,
     },
     "customer.status": {
       "field_name": "customer_status",
       "label": "Customer Status",
-      "type": "dropdown",
-      "dropdown": {
-        "source": "customerStatus",
-        "type": "application",
-        "selecttion": "SELECT customer WHERE description CONTAINS ''"
-      },
+      "type": "select",
       "multivalued": false,
-      "mandatory": false
+      "mandatory": true,
     },
-    "residence": {
-      "field_name": "residence",
-      "label": "Residence",
-      "type": "dropdown",
-      "dropdown": {
-        "source": "residence",
-        "type": "application",
-        "selecttion": "SELECT customer WHERE description CONTAINS ''"
-      },
+    "risk.rating": {
+      "field_name": "risk_rating",
+      "label": "Risk Rating",
+      "type": "select",
       "multivalued": false,
-      "mandatory": false
+      "mandatory": false,
     },
-    "contact.date": {
-      "field_name": "contact_date",
-      "label": "Contact Date",
-      "type": "date",
-      "multivalued": true,
-      "mandatory": false
+    "pep": {
+      "field_name": "pep",
+      "label": "PEP Status",
+      "type": "select",
+      "multivalued": false,
+      "mandatory": false,
     },
-    "dob.incorp": {
-      "field_name": "dob_incorp",
-      "label": "Birth Incorp Date",
+    "kyc.review.date": {
+      "field_name": "kyc_review_date",
+      "label": "KYC Review Date",
       "type": "date",
       "multivalued": false,
-      "mandatory": false
-    }
-  }
-}
+      "mandatory": false,
+    },
+    "address.line.1": {
+      "field_name": "address_line_1",
+      "label": "Address Line 1",
+      "type": "string",
+      "multivalued": false,
+      "mandatory": true,
+      "max_length": 150,
+    },
+    "address.line.2": {
+      "field_name": "address_line_2",
+      "label": "Address Line 2",
+      "type": "string",
+      "multivalued": false,
+      "mandatory": false,
+      "max_length": 150,
+    },
+    "town.city": {
+      "field_name": "town_city",
+      "label": "Town / City",
+      "type": "string",
+      "multivalued": false,
+      "mandatory": true,
+      "max_length": 60,
+    },
+    "country": {
+      "field_name": "country",
+      "label": "Country",
+      "type": "select",
+      "multivalued": false,
+      "mandatory": true,
+    },
+    "postal.code": {
+      "field_name": "postal_code",
+      "label": "Postal Code",
+      "type": "string",
+      "multivalued": false,
+      "mandatory": false,
+     "max_length": 15,
+    },
+    "mobile.phone": {
+      "field_name": "mobile_phone",
+      "label": "Mobile Phone",
+      "type": "tel",
+      "multivalued": false,
+      "mandatory": true,
+      "min_length": 7,
+      "max_length": 20,
+    },
+    "home.phone": {
+      "field_name": "home_phone",
+      "label": "Home Phone",
+      "type": "tel",
+      "multivalued": false,
+      "mandatory": false,
+    },
+    "email.address": {
+      "field_name": "email_address",
+      "label": "Email",
+      "type": "email",
+      "multivalued": false,
+      "mandatory": false,
+      "max_length": 100,
+    },
+    "communication.preference": {
+      "field_name": "communication_preference",
+      "label": "Preferred Communication Method",
+      "type": "select",
+      "multivalued": false,
+      "mandatory": false,
+    },
+    "relationship.officer": {
+      "field_name": "relationship_officer",
+      "label": "Relationship Officer",
+      "type": "reference",
+      "multivalued": false,
+      "mandatory": false,
+    },
+    "notes": {
+      "field_name": "notes",
+      "label": "Notes",
+      "type": "textarea",
+      "multivalued": false,
+      "mandatory": false,
+      "max_length": 300,
+    },
+    "attachments": {
+      "field_name": "attachments",
+      "label": "Attachments",
+      "type": "file",
+      "multi": false,
+      "mandatory": false,
+      "max_file_size": 5242880,
+    },
+  },
+};
 
 export default customerMetaData;

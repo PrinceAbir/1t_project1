@@ -1,7 +1,6 @@
-// src/metadata/index.js
+import fundTransferMeta from "./fundTransferMeta";
+import customerMeta from "./customerMetaData";
 
-import customerMeta from './customerMetaData';
-import fundTransferMeta from './fundTransferMeta';
 import accountMeta from './accountMetaData';       // ← Add these when you have them
 import depositMeta from './depositMetaData';
 import lendingMeta from './lendingMetaData';
