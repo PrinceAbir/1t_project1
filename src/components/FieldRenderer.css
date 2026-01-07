@@ -226,7 +226,7 @@ select.t24-input {
 
 /* Group child inputs with consistent styling */
 .group-child-row .t24-input {
-  width: calc(100% - 30px);
+  
   float: left;
 }
 
