@@ -337,6 +337,10 @@ const FieldRenderer = ({
   const renderMulti = () => {
     const arr = Array.isArray(value) ? value : [""];
     const errs = Array.isArray(error) ? error : [];
+    
+    // Show add button on the first field if array is empty or has only one item
+    const showAddButtonOnField = arr.length <= 1;
+    
     return (
       <div className="multi-fields-container">
         {arr.map((v, i) => (
@@ -362,6 +366,21 @@ const FieldRenderer = ({
               disabled={readOnly}
             />
             {errs[i] && <div className="t24-error">{errs[i]}</div>}
+            
+            {/* Add button on same line (for first field when empty or single) */}
+            {!readOnly && showAddButtonOnField && i === 0 && (!maxMulti || arr.length < maxMulti) && (
+              <button
+                type="button"
+                className="add-multi-field"
+                title={`Add another ${label}`}
+                aria-label={`Add another ${label}`}
+                onClick={addMulti}
+              >
+                +
+              </button>
+            )}
+            
+            {/* Remove button for items beyond the first */}
             {!readOnly && arr.length > 1 && (
               <button
                 type="button"
@@ -378,9 +397,11 @@ const FieldRenderer = ({
             )}
           </div>
         ))}
-        {!readOnly && (!maxMulti || arr.length < maxMulti) && (
+        
+        {/* Add button at bottom for when we have multiple items */}
+        {!readOnly && arr.length > 1 && (!maxMulti || arr.length < maxMulti) && (
           <button type="button" className="add-multi-field" onClick={addMulti}>
-            +
+            + 
           </button>
         )}
       </div>
@@ -413,39 +434,39 @@ const FieldRenderer = ({
                           <span className="required-asterisk">*</span>
                         )}
                       </label>
-
-                      {ch.type === "tel" || ch.type === "phone" ? (
-                        <input
-                          id={`${tabId}_${id}_${gi}_${ch.id}`}
-                          value={childValue ?? ""}
-                          onChange={(e) =>
-                            handleGroupChildChange(
-                              ch.id,
-                              sanitizeTel(
-                                e.target.value,
-                                ch.max_length ?? field?.max_length ?? 15
-                              ),
-                              gi
-                            )
-                          }
-                          className={`t24-input ${childErr ? "error" : ""}`}
-                          disabled={readOnly}
-                          inputMode="tel"
-                          maxLength={ch.max_length ?? field?.max_length ?? 15}
-                        />
-                      ) : (
-                        <input
-                          id={`${tabId}_${id}_${gi}_${ch.id}`}
-                          value={childValue ?? ""}
-                          onChange={(e) =>
-                            handleGroupChildChange(ch.id, e.target.value, gi)
-                          }
-                          className={`t24-input ${childErr ? "error" : ""}`}
-                          disabled={readOnly}
-                        />
-                      )}
-
-                      {childErr && <div className="t24-error">{childErr}</div>}
+                      <div className="t24-input-container">
+                        {ch.type === "tel" || ch.type === "phone" ? (
+                          <input
+                            id={`${tabId}_${id}_${gi}_${ch.id}`}
+                            value={childValue ?? ""}
+                            onChange={(e) =>
+                              handleGroupChildChange(
+                                ch.id,
+                                sanitizeTel(
+                                  e.target.value,
+                                  ch.max_length ?? field?.max_length ?? 15
+                                ),
+                                gi
+                              )
+                            }
+                            className={`t24-input ${childErr ? "error" : ""}`}
+                            disabled={readOnly}
+                            inputMode="tel"
+                            maxLength={ch.max_length ?? field?.max_length ?? 15}
+                          />
+                        ) : (
+                          <input
+                            id={`${tabId}_${id}_${gi}_${ch.id}`}
+                            value={childValue ?? ""}
+                            onChange={(e) =>
+                              handleGroupChildChange(ch.id, e.target.value, gi)
+                            }
+                            className={`t24-input ${childErr ? "error" : ""}`}
+                            disabled={readOnly}
+                          />
+                        )}
+                        {childErr && <div className="t24-error">{childErr}</div>}
+                      </div>
                     </div>
                   );
                 }
@@ -453,6 +474,7 @@ const FieldRenderer = ({
                 // === NESTED MULTI FIELD INSIDE GROUP ===
                 const childArr = Array.isArray(childValue) ? childValue : [""];
                 const childMax = ch.max_multifield ?? null;
+                const showAddButtonOnField = childArr.length <= 1;
 
                 return (
                   <div key={ch.id} className="group-child-multi-container">
@@ -512,6 +534,22 @@ const FieldRenderer = ({
                             <div className="t24-error">{childErr[ci]}</div>
                           )}
 
+                          {/* Add button on same line for nested multi fields */}
+                          {!readOnly && showAddButtonOnField && ci === 0 && (!childMax || childArr.length < childMax) && (
+                            <button
+                              type="button"
+                              className="add-multi-field"
+                              title={`Add another ${ch.label}`}
+                              aria-label={`Add another ${ch.label}`}
+                              onClick={() => {
+                                const newChildArr = [...childArr, ""];
+                                handleGroupChildChange(ch.id, newChildArr, gi);
+                              }}
+                            >
+                              +
+                            </button>
+                          )}
+
                           {!readOnly && childArr.length > 1 && (
                             <button
                               type="button"
@@ -533,19 +571,19 @@ const FieldRenderer = ({
                         </div>
                       ))}
 
-                      {!readOnly &&
-                        (!childMax || childArr.length < childMax) && (
-                          <button
-                            type="button"
-                            className="add-multi-field"
-                            onClick={() => {
-                              const newChildArr = [...childArr, ""];
-                              handleGroupChildChange(ch.id, newChildArr, gi);
-                            }}
-                          >
-                            + Add {ch.label}
-                          </button>
-                        )}
+                      {/* Add button at bottom for nested multi fields with multiple items */}
+                      {!readOnly && childArr.length > 1 && (!childMax || childArr.length < childMax) && (
+                        <button
+                          type="button"
+                          className="add-multi-field"
+                          onClick={() => {
+                            const newChildArr = [...childArr, ""];
+                            handleGroupChildChange(ch.id, newChildArr, gi);
+                          }}
+                        >
+                          + 
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -576,10 +614,10 @@ const FieldRenderer = ({
           </div>
         ))}
 
-        {/* Add new group instance */}
+        {/* Add new group instance - positioned at the bottom */}
         {!readOnly && groupMulti && (!maxMulti || groups.length < maxMulti) && (
           <button type="button" className="add-multi-field" onClick={addMulti}>
-            + Add {label}
+            + 
           </button>
         )}
       </div>

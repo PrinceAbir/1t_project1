@@ -1,7 +1,7 @@
 // src/components/MetadataAddOnlyPage.js
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import "../style/MetadataAddOnlyPage.css"; // Use this new CSS below
+import "../style/MetadataAddOnlyPage.css";
 
 const API_BASE = "http://localhost:5000/api/metadata";
 
@@ -131,7 +131,22 @@ const MetadataAddOnlyPage = () => {
           ? Number(formData.max_file_size)
           : undefined,
       fields: isGroupType
-        ? groupChildren.filter((child) => child.field_name.trim())
+        ? groupChildren
+            .filter((child) => child.field_name.trim())
+            .map((child) => ({
+              field_name: child.field_name.trim(),
+              label: child.label || child.field_name.trim(),
+              type: child.type,
+              mandatory: child.mandatory || false,
+              multi: child.multi || false,
+              multivalued: child.multi || false,
+              max_multifield: child.multi && child.max_multifield ? Number(child.max_multifield) : undefined,
+            }))
+            .filter((c) => {
+              // remove undefined keys
+              Object.keys(c).forEach((k) => c[k] === undefined && delete c[k]);
+              return true;
+            })
         : undefined,
     };
 
@@ -153,7 +168,7 @@ const MetadataAddOnlyPage = () => {
         throw new Error(err || "Add failed");
       }
 
-      // Refresh
+      // Refresh metadata
       const refresh = await fetch(`${API_BASE}/${endpoint}`);
       if (refresh.ok) setMetadata(await refresh.json());
 
@@ -167,7 +182,14 @@ const MetadataAddOnlyPage = () => {
   const addGroupChild = () => {
     setGroupChildren([
       ...groupChildren,
-      { field_name: "", label: "", type: "string", mandatory: false },
+      {
+        field_name: "",
+        label: "",
+        type: "string",
+        mandatory: false,
+        multi: false,
+        max_multifield: "",
+      },
     ]);
   };
 
@@ -321,6 +343,8 @@ const MetadataAddOnlyPage = () => {
                                     <th>Label</th>
                                     <th>Type</th>
                                     <th>Mandatory</th>
+                                    <th>Multi</th>
+                                    <th>Max Multi</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -338,6 +362,14 @@ const MetadataAddOnlyPage = () => {
                                           <span className="no-icon">−</span>
                                         )}
                                       </td>
+                                      <td className="yes-no-icon">
+                                        {child.multi || child.multivalued ? (
+                                          <span className="yes-icon">✓</span>
+                                        ) : (
+                                          <span className="no-icon">−</span>
+                                        )}
+                                      </td>
+                                      <td>{child.max_multifield || "-"}</td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -354,7 +386,7 @@ const MetadataAddOnlyPage = () => {
         </table>
       </div>
 
-      {/* Toast */}
+      {/* Toast Container */}
       <div className="toast-container">
         {toasts.map((toast) => (
           <div key={toast.id} className={`toast toast-${toast.type}`}>
@@ -366,14 +398,12 @@ const MetadataAddOnlyPage = () => {
               </strong>
               {toast.message}
             </div>
-            {toast.duration > 0 && (
-              <button
-                className="toast-close"
-                onClick={() => removeToast(toast.id)}
-              >
-                ×
-              </button>
-            )}
+            <button
+              className="toast-close"
+              onClick={() => removeToast(toast.id)}
+            >
+              ×
+            </button>
           </div>
         ))}
       </div>
@@ -588,7 +618,7 @@ const MetadataAddOnlyPage = () => {
                 </label>
               </div>
 
-              {/* Group Children Editor - Clean Card Style */}
+              {/* Group Children Editor */}
               {isGroupType && (
                 <div className="group-section">
                   <div className="group-header">
@@ -639,6 +669,7 @@ const MetadataAddOnlyPage = () => {
                               <option value="email">email</option>
                               <option value="date">date</option>
                             </select>
+
                             <div className="checkbox-group">
                               <span
                                 className={`checkbox-icon ${
@@ -656,6 +687,42 @@ const MetadataAddOnlyPage = () => {
                               </span>
                               <span>Mandatory</span>
                             </div>
+
+                            <div className="checkbox-group">
+                              <span
+                                className={`checkbox-icon ${
+                                  child.multi ? "yes" : "no"
+                                }`}
+                                onClick={() =>
+                                  updateGroupChild(
+                                    idx,
+                                    "multi",
+                                    !child.multi
+                                  )
+                                }
+                              >
+                                {child.multi ? "✓" : "−"}
+                              </span>
+                              <span>Multi-valued</span>
+                            </div>
+
+                            {child.multi && (
+                              <input
+                                type="number"
+                                placeholder="Max Multi"
+                                style={{ width: "100px" }}
+                                value={child.max_multifield || ""}
+                                onChange={(e) =>
+                                  updateGroupChild(
+                                    idx,
+                                    "max_multifield",
+                                    e.target.value ? Number(e.target.value) : ""
+                                  )
+                                }
+                                min="1"
+                              />
+                            )}
+
                             <button
                               className="delete-child-btn"
                               onClick={() => deleteGroupChild(idx)}

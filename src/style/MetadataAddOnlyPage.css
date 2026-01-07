@@ -416,3 +416,31 @@
 .metadata-table-wrapper::-webkit-scrollbar-thumb:hover {
   background: #a0aec0;
 }
+/* Child table - added Multi columns */
+.child-table th:nth-child(5),
+.child-table td:nth-child(5) {
+  text-align: center;
+}
+
+.child-table th:nth-child(6),
+.child-table td:nth-child(6) {
+  text-align: center;
+}
+
+/* Make child row grid accommodate new controls */
+.child-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto auto auto auto; /* added two more for multi checkbox + input */
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.child-row:first-child {
+  grid-template-columns: 1fr 1fr; /* first row only has field_name and label */
+}
+
+/* Optional: adjust when only two inputs */
+.child-card .child-row:first-of-type {
+  grid-template-columns: 1fr 1fr;
+}

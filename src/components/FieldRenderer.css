@@ -26,7 +26,7 @@
 input.t24-input,
 select.t24-input,
 textarea.t24-input {
-  width: 100%;
+  width: calc(100% - 70px); /* Make room for buttons on the right */
   padding: 8px 0;
   border: none;
   border-bottom: 1px solid #b0bec5;
@@ -36,6 +36,7 @@ textarea.t24-input {
   transition: border-color 0.2s ease;
   border-radius: 0;
   box-sizing: border-box;
+  float: left;
 }
 
 .t24-input:focus,
@@ -64,14 +65,14 @@ textarea.t24-input:disabled {
   border-bottom-color: #b0bec5;
 }
 
-/* Remove native select arrow and apply underline style */
+/* Remove native select arrow */
 select.t24-input {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  padding-right: 24px;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230b5fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right center;
   background-size: 16px;
+  padding-right: 20px;
 }
 
 /* Error text */
@@ -79,43 +80,125 @@ select.t24-input {
   color: #d93025;
   font-size: 12px;
   margin-top: 6px;
+  clear: both;
 }
 
 /* Multi containers */
-.multi-fields-container,
+.multi-fields-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .group-fields-container {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-/* Row alignment for multi fields - buttons stay on same line */
+/* Multi field row with buttons on right */
 .multi-field-row {
   display: flex;
   align-items: center;
-  position: relative;
   width: 100%;
-  margin-bottom: 8px;
+  position: relative;
 }
 
-/* Input wrapper with inline button */
-.input-with-button {
+/* Input wrapper for multi fields */
+.multi-input-wrapper {
   display: flex;
   align-items: center;
   width: 100%;
-  position: relative;
+  gap: 8px;
 }
 
-/* Remove button positioned at end of input */
-.multi-field-row .remove-multi-field {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  margin: 0;
+/* Remove button positioned on far right */
+.remove-multi-field {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  margin: 0 0 0 20px;
+  border-radius: 4px;
+  border: 1px solid #e6edf5;
+  background: #ffffff;
+  cursor: pointer;
+  color: #d93025;
+  font-weight: 700;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  order: 3; /* Make it the last item */
 }
 
-/* Group child row - fixed alignment */
+.remove-multi-field:hover {
+  background: #fff5f5;
+  border-color: #fad4d4;
+}
+
+/* Add button positioned on far right */
+.add-multi-field {
+  background: none;
+  border: none;
+  padding: 6px;
+  margin: 0 0 0 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0b5fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid #e6eef6;
+  flex-shrink: 0;
+  order: 2; /* Make it the second item (before remove) */
+}
+
+.add-multi-field::before {
+  content: "+";
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.add-multi-field:hover {
+  background: #f0f6ff;
+}
+
+/* Add button at bottom (for when multiple items exist) */
+.add-multi-field-bottom {
+  background: none;
+  border: none;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0b5fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.add-multi-field-bottom::before {
+  content: "+";
+  font-weight: 700;
+  font-size: 16px;
+  margin-right: 4px;
+}
+
+.add-multi-field-bottom:hover {
+  background: #f0f6ff;
+}
+
+/* Group child row - consistent design */
 .group-child-row {
   display: flex;
   align-items: center;
@@ -138,79 +221,17 @@ select.t24-input {
 .group-child-row .t24-input-container {
   flex: 1;
   min-width: 0;
+  position: relative;
 }
 
-/* === CONSISTENT MINIMAL ADD BUTTON (used everywhere) === */
-.add-multi-field {
-  display: inline-flex;
-  align-items: center;
-  background: none;
-  border: none;
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #0b5fff;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  height: 36px;
-  margin-top: 4px;
+/* Group child inputs with consistent styling */
+.group-child-row .t24-input {
+  width: calc(100% - 30px);
+  float: left;
 }
 
-.add-multi-field::before {
-  content: "+";
-  font-weight: 700;
-  font-size: 16px;
-  line-height: 1;
-  margin-right: 4px;
-}
-
-.add-multi-field:hover {
-  background: #f0f6ff;
-  color: #094ecc;
-}
-
-.add-multi-field:active {
-  background: #e6f0ff;
-}
-
-/* === CONSISTENT MINIMAL REMOVE BUTTON (used everywhere) === */
-.remove-multi-field {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border-radius: 4px;
-  border: 1px solid #e6edf5;
-  background: #ffffff;
-  cursor: pointer;
-  color: #d93025;
-  font-weight: 700;
-  font-size: 16px;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.remove-multi-field:hover {
-  background: #fff5f5;
-  border-color: #fad4d4;
-  box-shadow: 0 2px 4px rgba(217, 48, 37, 0.08);
-}
-
-.remove-multi-field:active {
-  background: #feefef;
-}
-
-.remove-multi-field .remove-icon {
-  line-height: 1;
-}
-
-/* === NESTED MULTI FIELDS INSIDE GROUPS - FIXED AND CONSISTENT === */
+/* Nested multi fields inside groups */
 .group-child-multi-container {
-  display: flex;
-  flex-direction: column;
   width: 100%;
   margin-bottom: 16px;
 }
@@ -225,47 +246,41 @@ select.t24-input {
 }
 
 .group-child-multi-container .multi-fields-container {
-  margin-left: 186px; /* 170px label width + 16px gap */
+  margin-left: 186px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .group-child-multi-container .multi-field-row {
   display: flex;
   align-items: center;
-  position: relative;
-  width: 100%;
-}
-
-.group-child-multi-container .input-with-button {
   width: 100%;
 }
 
 .group-child-multi-container .t24-input {
-  flex: 1;
-  min-width: 0;
-  padding-right: 36px; /* Space for remove button */
+  width: calc(100% - 70px);
+  float: left;
 }
 
-.group-child-multi-container .add-multi-field {
+/* Special case for add button in nested multi - positioned at bottom */
+.group-child-multi-container .add-multi-field-bottom {
   margin-left: 186px;
   margin-top: 8px;
 }
 
-/* Clear float */
 .group-child-multi-container::after {
   content: "";
   display: table;
   clear: both;
 }
 
-/* Group instance styling */
+/* Group instance */
 .group-instance {
   border: 1px solid #e6edf5;
   padding: 16px;
   border-radius: 6px;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  background: #fbfdff;
   margin-bottom: 16px;
 }
 
@@ -282,21 +297,6 @@ select.t24-input {
 }
 
 /* Attachments */
-.remove-attachment {
-  background: #fff;
-  border: 1px solid #d1dde9;
-  padding: 6px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-  color: #4a5568;
-  margin-left: 8px;
-}
-
-.remove-attachment:hover {
-  background: #f7fafc;
-}
-
 .attachment-list {
   margin-top: 8px;
   display: flex;
@@ -314,6 +314,149 @@ select.t24-input {
   border-radius: 4px;
   background: #fff;
   font-size: 13px;
+}
+
+.remove-attachment {
+  background: #fff;
+  border: 1px solid #d1dde9;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #4a5568;
+}
+
+.remove-attachment:hover {
+  background: #f7fafc;
+}
+
+/* Textarea */
+textarea.t24-input {
+  border: none;
+  border-bottom: 1px solid #b0bec5;
+  padding: 8px 0;
+  background: transparent;
+  resize: vertical;
+  min-height: 60px;
+  width: 100%;
+}
+
+textarea.t24-input:focus {
+  border-bottom-color: #0b5fff;
+  box-shadow: 0 1px 0 0 #0b5fff;
+}
+
+/* Textarea minimize */
+.field-minimized-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.field-minimized-preview {
+  color: #333;
+  padding: 8px 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #eef6ff;
+  flex: 1;
+  font-style: italic;
+}
+
+.minimize-field-btn {
+  border: none;
+  background: #fff;
+  border-radius: 4px;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  cursor: pointer;
+  border: 1px solid #e6eef6;
+  color: #0b3b61;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.minimize-field-btn:hover {
+  background: #f3f8ff;
+}
+
+/* File input */
+input[type="file"].t24-input {
+  border: none;
+  border-bottom: 1px solid #b0bec5;
+  padding: 8px 0;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+}
+
+input[type="file"].t24-input:focus {
+  border-bottom-color: #0b5fff;
+  box-shadow: 0 1px 0 0 #0b5fff;
+}
+
+/* Specific input types */
+input[type="number"].t24-input,
+input[type="date"].t24-input,
+input[type="email"].t24-input,
+input[type="tel"].t24-input,
+input[type="text"].t24-input,
+input[type="password"].t24-input,
+input[type="search"].t24-input,
+input[type="url"].t24-input {
+  border: none;
+  border-bottom: 1px solid #b0bec5;
+  padding: 8px 0;
+  background: transparent;
+  width: calc(100% - 70px);
+}
+
+input[type="number"].t24-input:focus,
+input[type="date"].t24-input:focus,
+input[type="email"].t24-input:focus,
+input[type="tel"].t24-input:focus,
+input[type="text"].t24-input:focus,
+input[type="password"].t24-input:focus,
+input[type="search"].t24-input:focus,
+input[type="url"].t24-input:focus {
+  border-bottom-color: #0b5fff;
+  box-shadow: 0 1px 0 0 #0b5fff;
+}
+
+/* Clear floats */
+.multi-field-row::after,
+.group-child-row::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Grid layout */
+.t24-form-grid {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+.t24-form-grid > .t24-form-field {
+  width: 100%;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Custom dropdown with underline style */
@@ -415,182 +558,4 @@ select.t24-input {
 
 .dropdown-table tr.highlight td {
   background: #eef7ff;
-}
-
-/* Textarea with underline style */
-textarea.t24-input {
-  border: none;
-  border-bottom: 1px solid #b0bec5;
-  padding: 8px 0;
-  background: transparent;
-  resize: vertical;
-  min-height: 60px;
-}
-
-textarea.t24-input:focus {
-  border-bottom-color: #0b5fff;
-  box-shadow: 0 1px 0 0 #0b5fff;
-}
-
-/* Textarea minimize */
-.minimize-field-btn {
-  border: none;
-  background: #fff;
-  border-radius: 4px;
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 8px;
-  cursor: pointer;
-  border: 1px solid #e6eef6;
-  color: #0b3b61;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.minimize-field-btn:hover {
-  background: #f3f8ff;
-}
-
-.field-minimized-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-
-.field-minimized-preview {
-  color: #333;
-  padding: 8px 0;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid #eef6ff;
-  flex: 1;
-  font-style: italic;
-}
-
-/* File input with underline style */
-input[type="file"].t24-input {
-  border: none;
-  border-bottom: 1px solid #b0bec5;
-  padding: 8px 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-input[type="file"].t24-input:focus {
-  border-bottom-color: #0b5fff;
-  box-shadow: 0 1px 0 0 #0b5fff;
-}
-
-/* Number input with underline style */
-input[type="number"].t24-input {
-  border: none;
-  border-bottom: 1px solid #b0bec5;
-  padding: 8px 0;
-  background: transparent;
-}
-
-input[type="number"].t24-input:focus {
-  border-bottom-color: #0b5fff;
-  box-shadow: 0 1px 0 0 #0b5fff;
-}
-
-/* Date input with underline style */
-input[type="date"].t24-input {
-  border: none;
-  border-bottom: 1px solid #b0bec5;
-  padding: 8px 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-input[type="date"].t24-input:focus {
-  border-bottom-color: #0b5fff;
-  box-shadow: 0 1px 0 0 #0b5fff;
-}
-
-/* Email input with underline style */
-input[type="email"].t24-input {
-  border: none;
-  border-bottom: 1px solid #b0bec5;
-  padding: 8px 0;
-  background: transparent;
-}
-
-input[type="email"].t24-input:focus {
-  border-bottom-color: #0b5fff;
-  box-shadow: 0 1px 0 0 #0b5fff;
-}
-
-/* Tel input with underline style */
-input[type="tel"].t24-input {
-  border: none;
-  border-bottom: 1px solid #b0bec5;
-  padding: 8px 0;
-  background: transparent;
-}
-
-input[type="tel"].t24-input:focus {
-  border-bottom-color: #0b5fff;
-  box-shadow: 0 1px 0 0 #0b5fff;
-}
-
-/* Specific input types to ensure they have underline style */
-input[type="text"].t24-input,
-input[type="password"].t24-input,
-input[type="search"].t24-input,
-input[type="url"].t24-input {
-  border: none;
-  border-bottom: 1px solid #b0bec5;
-  padding: 8px 0;
-  background: transparent;
-}
-
-input[type="text"].t24-input:focus,
-input[type="password"].t24-input:focus,
-input[type="search"].t24-input:focus,
-input[type="url"].t24-input:focus {
-  border-bottom-color: #0b5fff;
-  box-shadow: 0 1px 0 0 #0b5fff;
-}
-
-/* Grid layout support */
-.t24-form {
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: 16px;
-}
-
-.t24-form.cols-1 { grid-template-columns: repeat(1, 1fr); }
-.t24-form.cols-2 { grid-template-columns: repeat(2, 1fr); }
-.t24-form.cols-3 { grid-template-columns: repeat(3, 1fr); }
-
-@media (min-width: 600px) {
-  .t24-form { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (min-width: 1000px) {
-  .t24-form { grid-template-columns: repeat(3, 1fr); }
-}
-
-.t24-form .t24-form-field { width: 100%; }
-
-.t24-form-grid {
-  display: grid;
-  gap: 16px;
-  align-items: start;
-}
-
-.t24-form-grid > .t24-form-field { width: 100%; }
-
-.sr-only {
-  position: absolute !important;
-  height: 1px;
-  width: 1px;
-  overflow: hidden;
-  clip: rect(1px, 1px, 1px, 1px);
-  white-space: nowrap;
 }
