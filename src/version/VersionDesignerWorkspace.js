@@ -1,7 +1,7 @@
 // src/components/version/VersionDesignerWorkspace.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import ActionButtons from '../components/ActionButtons'; // Import the ActionButtons component
+import ActionButtons from '../components/ActionButtons';
 import './VersionDesignerWorkspace.css';
 
 const VersionDesignerWorkspace = () => {
@@ -22,6 +22,14 @@ const VersionDesignerWorkspace = () => {
 
   // Multi-select dropdown state
   const [selectedDropdownOptions, setSelectedDropdownOptions] = useState([]);
+
+  // Group management state
+  const [groups, setGroups] = useState([]);
+  const [showGroupDialog, setShowGroupDialog] = useState(false);
+  const [groupName, setGroupName] = useState('');
+
+  // Track which group is being expanded for field addition
+  const [expandedGroupForField, setExpandedGroupForField] = useState(null);
 
   // Dropdown tab
   const [dropDowns, setDropDowns] = useState([
@@ -81,6 +89,51 @@ const VersionDesignerWorkspace = () => {
     return Object.keys(coreFields).filter(k => !selectedFields[k]);
   }, [coreFields, selectedFields]);
 
+  // Check if selected fields are eligible for grouping (more than 1 selected)
+  const canCreateGroup = useMemo(() => {
+    return selectedDropdownOptions.length > 1;
+  }, [selectedDropdownOptions]);
+
+  // Create a combined list of fields and groups for display
+  const fieldDefinitionsList = useMemo(() => {
+    const list = [];
+    
+    // Add groups first
+    groups.forEach(group => {
+      list.push({
+        type: 'group',
+        id: group.id,
+        data: group
+      });
+      
+      // Add fields within the group
+      group.fields.forEach(fieldKey => {
+        if (selectedFields[fieldKey]) {
+          list.push({
+            type: 'field',
+            id: fieldKey,
+            data: selectedFields[fieldKey],
+            groupId: group.id
+          });
+        }
+      });
+    });
+    
+    // Add single fields that are not in any group
+    selectedFieldKeys.forEach(key => {
+      const isInGroup = groups.some(group => group.fields.includes(key));
+      if (!isInGroup) {
+        list.push({
+          type: 'field',
+          id: key,
+          data: selectedFields[key]
+        });
+      }
+    });
+    
+    return list;
+  }, [selectedFields, selectedFieldKeys, groups]);
+
   useEffect(() => {
     if (!application || !version || !coreFields) {
       navigate('/version-designer');
@@ -105,6 +158,7 @@ const VersionDesignerWorkspace = () => {
         noOfAuth,
         isPrintOnly,
         fields: selectedFields,
+        groups,
         dropDowns,
         autoDefaults,
         fieldProperties,
@@ -160,6 +214,7 @@ const VersionDesignerWorkspace = () => {
       noOfAuth,
       isPrintOnly,
       fields: selectedFields,
+      groups,
       dropDowns,
       autoDefaults,
       fieldProperties,
@@ -219,12 +274,13 @@ const VersionDesignerWorkspace = () => {
           text: '',
           attribute: '',
           displayType: 'Text',
-          dropdownSource: '', // Add dropdownSource property
+          dropdownSource: '',
           toolTip: '',
           enrich: false,
           mandatory: coreField.mandatory || false,
           min_length: coreField.min_length,
-          max_length: coreField.max_length
+          max_length: coreField.max_length,
+          isInGroup: false
         };
       }
     });
@@ -245,12 +301,13 @@ const VersionDesignerWorkspace = () => {
       text: '',
       attribute: '',
       displayType: 'Text',
-      dropdownSource: '', // Add dropdownSource property
+      dropdownSource: '',
       toolTip: '',
       enrich: false,
       mandatory: coreField.mandatory || false,
       min_length: coreField.min_length,
-      max_length: coreField.max_length
+      max_length: coreField.max_length,
+      isInGroup: false
     };
 
     setSelectedFields(prev => ({ ...prev, [key]: newField }));
@@ -268,6 +325,133 @@ const VersionDesignerWorkspace = () => {
     setSelectedDropdownOptions([]);
   };
 
+  // Handle create group from selected fields
+  const handleCreateGroup = () => {
+    if (selectedDropdownOptions.length < 2) {
+      alert('Please select at least 2 fields to create a group');
+      return;
+    }
+
+    setShowGroupDialog(true);
+  };
+
+  // Confirm group creation
+  const confirmCreateGroup = () => {
+    if (!groupName.trim()) {
+      alert('Please enter a group name');
+      return;
+    }
+
+    const newGroup = {
+      id: Date.now().toString(),
+      name: groupName,
+      fields: [...selectedDropdownOptions],
+      createdAt: new Date().toISOString()
+    };
+
+    setGroups(prev => [...prev, newGroup]);
+    
+    // Also add the fields to selected fields if not already added
+    handleAddFields(newGroup.fields);
+    
+    // Clear the dialog and selections
+    setGroupName('');
+    setShowGroupDialog(false);
+    setSelectedDropdownOptions([]);
+  };
+
+  // Duplicate a group
+  const duplicateGroup = (groupId) => {
+    const groupToDuplicate = groups.find(g => g.id === groupId);
+    if (!groupToDuplicate) return;
+
+    const newGroup = {
+      ...groupToDuplicate,
+      id: Date.now().toString(),
+      name: `${groupToDuplicate.name} (Copy)`,
+      createdAt: new Date().toISOString()
+    };
+
+    setGroups(prev => [...prev, newGroup]);
+    
+    // Add the fields from the duplicated group to selected fields
+    const newFieldKeys = [];
+    groupToDuplicate.fields.forEach(fieldKey => {
+      if (coreFields[fieldKey]) {
+        const newFieldKey = `${fieldKey}_copy_${Date.now()}`;
+        const field = coreFields[fieldKey];
+        const newField = {
+          ...field,
+          column: '',
+          textMax: field.max_length?.toString() || '',
+          text: '',
+          attribute: '',
+          displayType: 'Text',
+          dropdownSource: '',
+          toolTip: '',
+          enrich: false,
+          mandatory: field.mandatory || false,
+          min_length: field.min_length,
+          max_length: field.max_length,
+          field_name: newFieldKey,
+          label: `${field.label || field.field_name} (Copy)`
+        };
+        
+        setSelectedFields(prev => ({ ...prev, [newFieldKey]: newField }));
+        setSelectedFieldKeys(prev => [...prev, newFieldKey]);
+        newFieldKeys.push(newFieldKey);
+      }
+    });
+    
+    // Update the duplicated group with new field keys
+    newGroup.fields = newFieldKeys;
+    setGroups(prev => prev.map(g => g.id === newGroup.id ? newGroup : g));
+  };
+
+  // Remove a group
+  const removeGroup = (groupId) => {
+    setGroups(prev => prev.filter(g => g.id !== groupId));
+  };
+
+  // Add a duplicate field to a group
+  const addFieldToGroup = (groupId, fieldKey = null) => {
+    const groupIndex = groups.findIndex(g => g.id === groupId);
+    if (groupIndex === -1) return;
+
+    const group = groups[groupIndex];
+    
+    // If no specific field key provided, use the first field in the group
+    const sourceFieldKey = fieldKey || group.fields[0];
+    if (!sourceFieldKey || !selectedFields[sourceFieldKey]) return;
+
+    // Create a new unique key for the duplicate field
+    const field = selectedFields[sourceFieldKey];
+    const newFieldKey = `${sourceFieldKey}_copy_${Date.now()}`;
+    
+    // Add the new field to selected fields
+    const newField = {
+      ...field,
+      field_name: newFieldKey,
+      label: `${field.label || field.field_name} (Copy)`
+    };
+
+    setSelectedFields(prev => ({ ...prev, [newFieldKey]: newField }));
+    setSelectedFieldKeys(prev => [...prev, newFieldKey]);
+
+    // Add the new field to the group
+    const updatedGroups = [...groups];
+    updatedGroups[groupIndex] = {
+      ...group,
+      fields: [...group.fields, newFieldKey]
+    };
+    setGroups(updatedGroups);
+  };
+
+  // Show field selection for a specific group
+  const showAddFieldToGroup = (groupId) => {
+    setExpandedGroupForField(groupId === expandedGroupForField ? null : groupId);
+  };
+
   const removeField = (key) => {
     setSelectedFields(prev => {
       const copy = { ...prev };
@@ -275,6 +459,12 @@ const VersionDesignerWorkspace = () => {
       return copy;
     });
     setSelectedFieldKeys(prev => prev.filter(k => k !== key));
+    
+    // Remove field from any groups
+    setGroups(prev => prev.map(group => ({
+      ...group,
+      fields: group.fields.filter(fieldKey => fieldKey !== key)
+    })).filter(group => group.fields.length > 0));
   };
 
   const updateFieldProperty = (key, property, value) => {
@@ -341,8 +531,200 @@ const VersionDesignerWorkspace = () => {
     );
   };
 
-  // Tab components (keep all the existing tab render functions exactly as they were)
-  // ... [All the tab render functions remain exactly the same] ...
+  // Render a group row
+  const renderGroupRow = (group) => (
+    <tr key={`group-${group.id}`} className="group-header-row">
+      <td colSpan="9" className="group-header-cell">
+        <div className="group-header-content">
+          <div className="group-title">
+            <span className="group-icon">📁</span>
+            <span className="group-name">{group.name}</span>
+            <span className="group-field-count">
+              ({group.fields.length} field{group.fields.length !== 1 ? 's' : ''})
+            </span>
+          </div>
+          <div className="group-actions">
+            <button
+              onClick={() => showAddFieldToGroup(group.id)}
+              className="btn-secondary btn-small btn-icon"
+              title="Add Field to Group"
+            >
+              <span className="icon">+</span> Add Field
+            </button>
+            <button
+              onClick={() => duplicateGroup(group.id)}
+              className="btn-secondary btn-small btn-icon"
+              title="Duplicate Group"
+            >
+              <span className="icon">📋</span> Duplicate
+            </button>
+            <button
+              onClick={() => removeGroup(group.id)}
+              className="btn-danger btn-small btn-icon"
+              title="Remove Group"
+            >
+              <span className="icon">×</span> Remove
+            </button>
+          </div>
+        </div>
+        
+        {/* Field selection for this group */}
+        {expandedGroupForField === group.id && (
+          <div className="group-add-field-section">
+            <div className="group-add-field-controls">
+              <select
+                onChange={(e) => {
+                  if (e.target.value) {
+                    addFieldToGroup(group.id, e.target.value);
+                    e.target.value = '';
+                  }
+                }}
+                defaultValue=""
+                className="field-select-dropdown"
+                disabled={availableFields.length === 0}
+              >
+                <option value="" disabled>Select a field to add to group</option>
+                {availableFields.map(k => (
+                  <option key={k} value={k}>
+                    {coreFields[k].label} ({coreFields[k].type})
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => addFieldToGroup(group.id)}
+                className="btn-primary btn-small"
+                disabled={group.fields.length === 0}
+              >
+                <span className="btn-icon">+</span>
+                Duplicate Existing Field
+              </button>
+            </div>
+            {availableFields.length === 0 && (
+              <div className="group-add-field-hint">
+                No more available fields to add
+              </div>
+            )}
+          </div>
+        )}
+      </td>
+    </tr>
+  );
+
+  // Render a field row
+  const renderFieldRow = (fieldKey, field, isGrouped = false, groupId = null) => (
+    <tr key={fieldKey} className={`field-row ${isGrouped ? 'grouped-field' : ''}`}>
+      <td className="field-name-cell">
+        <div className="field-name-content">
+          {isGrouped && <span className="group-indicator">↳</span>}
+          <span className="field-name">{field.field_name}</span>
+          {field.mandatory && (
+            <span className="required-badge">Required</span>
+          )}
+          {groupId && (
+            <button
+              onClick={() => addFieldToGroup(groupId, fieldKey)}
+              className="btn-add-similar btn-extra-small"
+              title="Duplicate this field in group"
+            >
+              +
+            </button>
+          )}
+        </div>
+      </td>
+      <td>
+        <input
+          type="text"
+          value={field.label || ''}
+          onChange={(e) => updateFieldProperty(fieldKey, 'label', e.target.value)}
+          placeholder="Display label"
+          className="table-input"
+        />
+      </td>
+      <td>
+        <div className="field-type-cell">
+          {renderFieldTypeBadge(field.type)}
+        </div>
+      </td>
+      <td>
+        <input
+          type="text"
+          value={field.column || ''}
+          onChange={(e) => updateFieldProperty(fieldKey, 'column', e.target.value)}
+          placeholder="Col"
+          className="table-input small-input"
+        />
+      </td>
+      <td>
+        <input
+          type="text"
+          value={field.textMax || ''}
+          onChange={(e) => updateFieldProperty(fieldKey, 'textMax', e.target.value)}
+          placeholder="Max"
+          className="table-input small-input"
+        />
+      </td>
+      <td>
+        <select
+          value={field.displayType || 'Text'}
+          onChange={(e) => updateFieldProperty(fieldKey, 'displayType', e.target.value)}
+          className="table-select"
+        >
+          <option value="Text">Text</option>
+          <option value="Dropdown">Dropdown</option>
+          <option value="Date">Date</option>
+          <option value="Number">Number</option>
+          <option value="Checkbox">Checkbox</option>
+        </select>
+
+        {field.displayType === 'Dropdown' && (
+          <select
+            value={field.dropdownSource || ''}
+            onChange={(e) => updateFieldProperty(fieldKey, 'dropdownSource', e.target.value)}
+            className="table-select dropdown-source-select"
+            style={{ marginTop: '5px', width: '100%' }}
+          >
+            <option value="">Select a dropdown...</option>
+            <option value="sector">Sector</option>
+            <option value="industry">Industry</option>
+            <option value="nationality">Nationality</option>
+            <option value="customerStatus">Customer Status</option>
+            <option value="residence">Residence</option>
+            <option value="accountOfficer">Account Officer</option>
+            <option value="otherOfficer1">Other Officer 1</option>
+          </select>
+        )}
+      </td>
+      <td>
+        <input
+          type="text"
+          value={field.toolTip || ''}
+          onChange={(e) => updateFieldProperty(fieldKey, 'toolTip', e.target.value)}
+          placeholder="Tooltip text"
+          className="table-input"
+        />
+      </td>
+      <td className="enrich-cell">
+        <label className="checkbox-inline">
+          <input
+            type="checkbox"
+            checked={field.enrich || false}
+            onChange={(e) => updateFieldProperty(fieldKey, 'enrich', e.target.checked)}
+            className="checkbox-input"
+          />
+          <span className="checkbox-label">Enrich</span>
+        </label>
+      </td>
+      <td className="actions-cell">
+        <button
+          onClick={() => removeField(fieldKey)}
+          className="btn-danger btn-small"
+          title="Remove field"
+        >
+          Remove
+        </button>
+      </td>
+    </tr>
+  );
 
   const renderFieldDefinitions = () => (
     <div className="tab-content">
@@ -406,6 +788,9 @@ const VersionDesignerWorkspace = () => {
             <span className="stat-item">
               Selected: <strong>{Object.keys(selectedFields).length}</strong>
             </span>
+            <span className="stat-item">
+              Groups: <strong>{groups.length}</strong>
+            </span>
           </div>
         </div>
 
@@ -431,6 +816,15 @@ const VersionDesignerWorkspace = () => {
               >
                 Clear
               </button>
+              {canCreateGroup && (
+                <button
+                  onClick={handleCreateGroup}
+                  className="btn-primary btn-small"
+                >
+                  <span className="btn-icon">📁</span>
+                  Create Group
+                </button>
+              )}
             </div>
           </div>
 
@@ -484,15 +878,22 @@ const VersionDesignerWorkspace = () => {
               <span className="summary-text">
                 {selectedDropdownOptions.length} field{selectedDropdownOptions.length !== 1 ? 's' : ''} selected
               </span>
+              {canCreateGroup && (
+                <span className="summary-hint">
+                  ✓ You can create a group with these fields
+                </span>
+              )}
             </div>
-            <button
-              onClick={handleBatchAddFields}
-              className="btn-primary"
-              disabled={selectedDropdownOptions.length === 0}
-            >
-              <span className="btn-icon">+</span>
-              Add Selected Fields
-            </button>
+            <div className="footer-buttons">
+              <button
+                onClick={handleBatchAddFields}
+                className="btn-primary"
+                disabled={selectedDropdownOptions.length === 0}
+              >
+                <span className="btn-icon">+</span>
+                Add Selected Fields
+              </button>
+            </div>
           </div>
         </div>
 
@@ -535,7 +936,7 @@ const VersionDesignerWorkspace = () => {
             </div>
           </div>
 
-          {Object.keys(selectedFields).length === 0 ? (
+          {fieldDefinitionsList.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">📝</div>
               <h4>No Fields Added Yet</h4>
@@ -558,113 +959,12 @@ const VersionDesignerWorkspace = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedFieldKeys.map(key => {
-                    const field = selectedFields[key];
-                    return (
-                      <tr key={key}>
-                        <td className="field-name-cell">
-                          <div className="field-name-content">
-                            <span className="field-name">{field.field_name}</span>
-                            {field.mandatory && (
-                              <span className="required-badge">Required</span>
-                            )}
-                          </div>
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            value={field.label || ''}
-                            onChange={(e) => updateFieldProperty(key, 'label', e.target.value)}
-                            placeholder="Display label"
-                            className="table-input"
-                          />
-                        </td>
-                        <td>
-                          <div className="field-type-cell">
-                            {renderFieldTypeBadge(field.type)}
-                          </div>
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            value={field.column || ''}
-                            onChange={(e) => updateFieldProperty(key, 'column', e.target.value)}
-                            placeholder="Col"
-                            className="table-input small-input"
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            value={field.textMax || ''}
-                            onChange={(e) => updateFieldProperty(key, 'textMax', e.target.value)}
-                            placeholder="Max"
-                            className="table-input small-input"
-                          />
-                        </td>
-                        <td>
-                          <select
-                            value={field.displayType || 'Text'}
-                            onChange={(e) => updateFieldProperty(key, 'displayType', e.target.value)}
-                            className="table-select"
-                          >
-                            <option value="Text">Text</option>
-                            <option value="Dropdown">Dropdown</option>
-                            <option value="Date">Date</option>
-                            <option value="Number">Number</option>
-                            <option value="Checkbox">Checkbox</option>
-                          </select>
-
-                          {/* Add dropdown selection when display type is Dropdown */}
-                          {field.displayType === 'Dropdown' && (
-                            <select
-                              value={field.dropdownSource || ''}
-                              onChange={(e) => updateFieldProperty(key, 'dropdownSource', e.target.value)}
-                              className="table-select dropdown-source-select"
-                              style={{ marginTop: '5px', width: '100%' }}
-                            >
-                              <option value="">Select a dropdown...</option>
-                              <option value="sector">Sector</option>
-                              <option value="industry">Industry</option>
-                              <option value="nationality">Nationality</option>
-                              <option value="customerStatus">Customer Status</option>
-                              <option value="residence">Residence</option>
-                              <option value="accountOfficer">Account Officer</option>
-                              <option value="otherOfficer1">Other Officer 1</option>
-                            </select>
-                          )}
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            value={field.toolTip || ''}
-                            onChange={(e) => updateFieldProperty(key, 'toolTip', e.target.value)}
-                            placeholder="Tooltip text"
-                            className="table-input"
-                          />
-                        </td>
-                        <td className="enrich-cell">
-                          <label className="checkbox-inline">
-                            <input
-                              type="checkbox"
-                              checked={field.enrich || false}
-                              onChange={(e) => updateFieldProperty(key, 'enrich', e.target.checked)}
-                              className="checkbox-input"
-                            />
-                            <span className="checkbox-label">Enrich</span>
-                          </label>
-                        </td>
-                        <td className="actions-cell">
-                          <button
-                            onClick={() => removeField(key)}
-                            className="btn-danger btn-small"
-                            title="Remove field"
-                          >
-                            Remove
-                          </button>
-                        </td>
-                      </tr>
-                    );
+                  {fieldDefinitionsList.map(item => {
+                    if (item.type === 'group') {
+                      return renderGroupRow(item.data);
+                    } else {
+                      return renderFieldRow(item.id, item.data, !!item.groupId, item.groupId);
+                    }
                   })}
                 </tbody>
               </table>
@@ -672,10 +972,79 @@ const VersionDesignerWorkspace = () => {
           )}
         </div>
       </div>
+
+      {/* Group Creation Dialog */}
+      {showGroupDialog && (
+        <div className="modal-overlay">
+          <div className="modal-dialog">
+            <div className="modal-header">
+              <h3 className="modal-title">Create Field Group</h3>
+              <button
+                onClick={() => {
+                  setShowGroupDialog(false);
+                  setGroupName('');
+                }}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="form-label">Group Name</label>
+                <input
+                  type="text"
+                  value={groupName}
+                  onChange={(e) => setGroupName(e.target.value)}
+                  placeholder="Enter group name"
+                  className="form-input"
+                  autoFocus
+                />
+                <p className="form-hint">
+                  This will create a group with {selectedDropdownOptions.length} selected fields
+                </p>
+              </div>
+              
+              <div className="selected-fields-preview">
+                <h4 className="preview-title">Selected Fields</h4>
+                <div className="preview-list">
+                  {selectedDropdownOptions.map(key => {
+                    const field = getFieldDetails(key);
+                    return field ? (
+                      <div key={key} className="preview-field">
+                        <span className="preview-field-name">{field.label || field.field_name}</span>
+                        <span className="preview-field-type">{field.type}</span>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                onClick={() => {
+                  setShowGroupDialog(false);
+                  setGroupName('');
+                }}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmCreateGroup}
+                className="btn-primary"
+                disabled={!groupName.trim()}
+              >
+                Create Group
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
-  // ... [All other tab render functions remain exactly as they were in your original code] ...
+  // ... [All other tab render functions remain exactly the same as in your original code] ...
 
   const renderDropDown = () => (
     <div className="tab-content">
@@ -1221,6 +1590,7 @@ const VersionDesignerWorkspace = () => {
       noOfAuth,
       isPrintOnly,
       fields: selectedFields,
+      groups,
       dropDowns,
       autoDefaults,
       fieldProperties,
@@ -1303,6 +1673,10 @@ const VersionDesignerWorkspace = () => {
             <span className="info-item">
               <span className="info-label">Available:</span>
               <span className="info-value">{availableFields.length} remaining</span>
+            </span>
+            <span className="info-item">
+              <span className="info-label">Groups:</span>
+              <span className="info-value">{groups.length} created</span>
             </span>
           </div>
         </div>
