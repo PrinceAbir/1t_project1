@@ -18,30 +18,28 @@ const MainApp = () => {
   const [recordData, setRecordData] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
 
-  // Handle module validation and load recent records
-  useEffect(() => {
-    if (
-      moduleParam &&
-      ["customer", "funds", "account", "deposit", "lending"].includes(
-        moduleParam
-      )
-    ) {
-      setCurrentModule(moduleParam);
-    } else {
-      alert("Invalid module. Redirecting to home.");
-      navigate("/");
-    }
+ 
+ useEffect(() => {
+  if (moduleParam) {
+    // Allow any module name - core or custom/dynamic from Version Designer or CMD bar
+    setCurrentModule(moduleParam);
+  } else {
+    // Fallback if no module in URL (should not happen normally)
+    setCurrentModule("customer");
+  }
 
-    try {
-      const savedRecords = JSON.parse(
-        localStorage.getItem("t24_recent_records") || "[]"
-      );
-      setRecentRecords(savedRecords.length > 0 ? savedRecords : []);
-    } catch (error) {
-      console.error("Error parsing recent records:", error);
-      setRecentRecords([]);
-    }
-  }, [moduleParam, navigate]);
+  // Load recent records (shared across all modules)
+  try {
+    const savedRecords = JSON.parse(
+      localStorage.getItem("t24_recent_records") || "[]"
+    );
+    setRecentRecords(savedRecords.length > 0 ? savedRecords : []);
+  } catch (error) {
+    console.error("Error parsing recent records:", error);
+    setRecentRecords([]);
+  }
+}, [moduleParam]);
+
 
   const handleCreate = () => {
     if (!recordId.trim()) {
@@ -150,23 +148,23 @@ const MainApp = () => {
     setShowSettings(!showSettings);
   };
 
-  const getModuleName = () => {
-    const modules = {
-      customer: "Customer",
-      funds: "Fund Transfer",
-      account: "Account",
-      deposit: "Deposit",
-      lending: "Lending",
-    };
-    return modules[currentModule] || "Application";
+ const getModuleName = () => {
+  const modules = {
+    customer: "Customer",
+    funds: "Fund Transfer",
+    account: "Account",
+    deposit: "Deposit",
+    lending: "Lending",
   };
+  return modules[currentModule] || currentModule.toUpperCase(); // Fallback to uppercase name for custom apps
+};
 
   
 
   const getPlaceholder = () => {
     const placeholders = {
       customer: "e.g., CUST00123, CUST00456...",
-      funds: "e.g., FT2024001, FT2024002...",
+      fundtransfer: "e.g., FT2024001, FT2024002...",
       account: "e.g., ACCT45678, ACCT45679...",
       deposit: "e.g., DEP78901, DEP78902...",
       lending: "e.g., LN234567, LN234568...",

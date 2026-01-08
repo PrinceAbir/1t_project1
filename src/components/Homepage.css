@@ -404,3 +404,101 @@
 
 
 
+/* Command Bar - Quick Launch */
+.cmd-bar-container {
+  padding: 20px 40px;
+  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.cmd-bar {
+  display: inline-flex;
+  align-items: center;
+  background: white;
+  border-radius: 50px;
+  padding: 8px 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  max-width: 700px;
+  width: 100%;
+}
+
+.cmd-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 12px 20px;
+  font-size: 16px;
+  color: #1e293b;
+  background: transparent;
+}
+
+.cmd-input::placeholder {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.cmd-submit-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.cmd-submit-btn:hover {
+  background: #2563eb;
+  transform: scale(1.05);
+}
+
+.cmd-hint {
+  margin-top: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cmd-bar-container {
+    padding: 20px;
+  }
+  .cmd-bar {
+    flex-direction: column;
+    padding: 12px;
+  }
+  .cmd-submit-btn {
+    margin-left: 0;
+    margin-top: 10px;
+  }
+}
+
+.cmd-error {
+  margin-top: 12px;
+  color: #fca5a5;
+  background: rgba(254, 242, 242, 0.8);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  border: 1px solid #f87171;
+}
+
+.cmd-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cmd-input:disabled {
+  opacity: 0.7;
+}

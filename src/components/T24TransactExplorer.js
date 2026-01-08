@@ -49,12 +49,16 @@ const T24TransactExplorer = ({ module, mode = "create" }) => {
   const isViewMode = mode === "view";
 
   // Fetch metadata from API
+  // Remove the entire getApiEndpoint function and replace the fetch line with:
+
   useEffect(() => {
     const fetchMetadata = async () => {
-      if (isFetching.current) return; // Prevent duplicate in dev
+      if (isFetching.current) return;
       isFetching.current = true;
 
-      const endpoint = getApiEndpoint(module);
+      // Use raw module name directly for dynamic/custom apps
+      const endpoint = module;
+   
       try {
         setLoading(true);
         setError(null);
@@ -65,7 +69,7 @@ const T24TransactExplorer = ({ module, mode = "create" }) => {
         }
 
         const data = await response.json();
-        console.log("Fetched Metadata:", data);
+        
         setMetadata(data);
         setColumns(data?.columns ? Number(data.columns) || 1 : 1);
       } catch (err) {
@@ -256,7 +260,6 @@ const T24TransactExplorer = ({ module, mode = "create" }) => {
     return false;
   }, [activeTab, formState, t24FormData, triggerToast, isViewMode]);
 
-  
   const handleCommit = () => {
     if (isViewMode) return;
     if (handleValidate()) {
@@ -342,24 +345,7 @@ const T24TransactExplorer = ({ module, mode = "create" }) => {
         <div className="t24-title-section">
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div className="t24-form-title">{currentTab.title}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <label style={{ fontSize: 12, color: "#333", fontWeight: 600 }}>
-                Columns
-              </label>
-              <select
-                value={columns}
-                onChange={(e) => setColumns(Number(e.target.value) || 1)}
-                style={{
-                  padding: "6px 8px",
-                  borderRadius: 4,
-                  border: "1px solid #cfd8dc",
-                }}
-              >
-                <option value={1}>1</option>
-                <option value={2}>2</option>
-                <option value={3}>3</option>
-              </select>
-            </div>
+            
           </div>
 
           <ActionButtons
